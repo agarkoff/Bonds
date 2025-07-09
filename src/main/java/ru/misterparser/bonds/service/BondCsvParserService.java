@@ -39,7 +39,7 @@ public class BondCsvParserService {
         
         try {
             URL url = new URL(csvUrl);
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream(), StandardCharsets.UTF_8))) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream(), "cp1251"))) {
                 
                 CSVParser parser = new CSVParserBuilder()
                     .withSeparator(';')
