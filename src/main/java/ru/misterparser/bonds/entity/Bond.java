@@ -20,6 +20,7 @@ public class Bond {
     private BigDecimal waPrice;
     private BigDecimal faceValue;
     private Integer couponFrequency;
+    private BigDecimal nkd;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
