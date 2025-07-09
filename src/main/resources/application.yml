@@ -1,0 +1,34 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: demo-app
+  profiles:
+    active: dev
+
+logging:
+  level:
+    com.example.demo: DEBUG
+    org.springframework.web: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+moex:
+  bonds-csv: https://iss.moex.com/iss/apps/infogrid/emission/rates.csv?columns=SECID,SHORTNAME,ISIN,FACEVALUE,FACEUNIT,ISSUESIZE,MATDATE,COUPONFREQUENCY,COUPONPERCENT,COUPONLENGTH&iss.dp=comma&iss.df=%25d.%25m.%25Y&iss.tf=%25H:%25M:%25S&iss.dtf=%25d.%25m.%25Y%20%25H:%25M:%25S&iss.only=rates&limit=unlimited&lang=ru
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: jdbc:postgresql://localhost:25432/bonds
+    driver-class-name: org.postgresql.Driver
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.xml
+    enabled: true
