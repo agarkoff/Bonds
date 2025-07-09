@@ -11,7 +11,7 @@ spring:
 
 logging:
   level:
-    com.example.demo: DEBUG
+    ru.misterparser.bonds: DEBUG
     org.springframework.web: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
