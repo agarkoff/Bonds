@@ -85,10 +85,10 @@ public class BondRepository {
     
     public void upsertBond(String ticker, BigDecimal couponValue) {
         String sql = """
-            INSERT INTO bonds (ticker, coupon_value, created_at, updated_at) 
+            INSERT INTO bonds (ticker, coupon_value, created_at, updated_at)
             VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-            ON CONFLICT (ticker) 
-            DO UPDATE SET 
+            ON CONFLICT (ticker)
+            DO UPDATE SET
                 coupon_value = EXCLUDED.coupon_value,
                 updated_at = CURRENT_TIMESTAMP
             """;
