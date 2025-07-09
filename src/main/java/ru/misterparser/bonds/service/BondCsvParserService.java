@@ -93,7 +93,11 @@ public class BondCsvParserService {
                                     if (processedCount % 100 == 0) {
                                         logger.info("Processed {} bonds", processedCount);
                                     }
+                                } else {
+                                    logger.error("Для тикера {} не указана величина купона", ticker);
                                 }
+                            } else {
+                                logger.error("Для тикера {} не указана величина купона", ticker);
                             }
                         }
                     } catch (Exception e) {
