@@ -56,6 +56,7 @@ public class BondCsvParserService {
                 int secidIndex = -1;
                 int couponValueIndex = -1;
                 int matdateIndex = -1;
+                int wapriceIndex = -1;
                 int processedCount = 0;
                 
                 while ((line = csvReader.readNext()) != null) {
@@ -66,6 +67,7 @@ public class BondCsvParserService {
                         secidIndex = findColumnIndex(headers, "SECID");
                         couponValueIndex = findColumnIndex(headers, "COUPONVALUE");
                         matdateIndex = findColumnIndex(headers, "MATDATE");
+                        wapriceIndex = findColumnIndex(headers, "WAPRICE");
                         
                         if (secidIndex == -1 || couponValueIndex == -1) {
                             logger.error("Required columns not found. SECID: {}, COUPONVALUE: {}", 
@@ -73,8 +75,8 @@ public class BondCsvParserService {
                             return 0;
                         }
                         
-                        logger.info("Found headers at line 3. SECID index: {}, COUPONVALUE index: {}, MATDATE index: {}", 
-                            secidIndex, couponValueIndex, matdateIndex);
+                        logger.info("Found headers at line 3. SECID index: {}, COUPONVALUE index: {}, MATDATE index: {}, WAPRICE index: {}", 
+                            secidIndex, couponValueIndex, matdateIndex, wapriceIndex);
                         continue;
                     }
 
@@ -83,18 +85,20 @@ public class BondCsvParserService {
                     }
                     
                     try {
-                        int maxIndex = Math.max(secidIndex, Math.max(couponValueIndex, matdateIndex));
+                        int maxIndex = Math.max(secidIndex, Math.max(couponValueIndex, Math.max(matdateIndex, wapriceIndex)));
                         if (line.length > maxIndex) {
                             String ticker = line[secidIndex] != null ? line[secidIndex].trim() : "";
                             String couponValueStr = line[couponValueIndex] != null ? line[couponValueIndex].trim() : "";
                             String matdateStr = matdateIndex != -1 && line[matdateIndex] != null ? line[matdateIndex].trim() : "";
+                            String wapriceStr = wapriceIndex != -1 && line[wapriceIndex] != null ? line[wapriceIndex].trim() : "";
                             
                             if (!ticker.isEmpty() && !couponValueStr.isEmpty()) {
                                 BigDecimal couponValue = parseCouponValue(couponValueStr);
                                 LocalDate maturityDate = parseMaturityDate(matdateStr);
+                                BigDecimal waPrice = parseCouponValue(wapriceStr);
                                 
                                 if (couponValue != null) {
-                                    bondRepository.upsertBond(ticker, couponValue, maturityDate);
+                                    bondRepository.upsertBond(ticker, couponValue, maturityDate, waPrice);
                                     processedCount++;
                                     
                                     if (processedCount % 100 == 0) {

@@ -56,7 +56,7 @@ public class BondRepository {
     }
     
     private Bond insert(Bond bond) {
-        String sql = "INSERT INTO bonds (ticker, coupon_value, maturity_date, created_at, updated_at) VALUES (?, ?, ?, ?, ?) RETURNING id";
+        String sql = "INSERT INTO bonds (ticker, coupon_value, maturity_date, wa_price, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?) RETURNING id";
         LocalDateTime now = LocalDateTime.now();
         bond.setCreatedAt(now);
         bond.setUpdatedAt(now);
@@ -64,6 +64,7 @@ public class BondRepository {
         Long id = jdbcTemplate.queryForObject(sql, Long.class, 
             bond.getTicker(), bond.getCouponValue(), 
             bond.getMaturityDate() != null ? Date.valueOf(bond.getMaturityDate()) : null,
+            bond.getWaPrice(),
             Timestamp.valueOf(bond.getCreatedAt()), 
             Timestamp.valueOf(bond.getUpdatedAt()));
         
@@ -72,11 +73,12 @@ public class BondRepository {
     }
     
     private Bond update(Bond bond) {
-        String sql = "UPDATE bonds SET ticker = ?, coupon_value = ?, maturity_date = ?, updated_at = ? WHERE id = ?";
+        String sql = "UPDATE bonds SET ticker = ?, coupon_value = ?, maturity_date = ?, wa_price = ?, updated_at = ? WHERE id = ?";
         bond.setUpdatedAt(LocalDateTime.now());
         
         jdbcTemplate.update(sql, bond.getTicker(), bond.getCouponValue(), 
             bond.getMaturityDate() != null ? Date.valueOf(bond.getMaturityDate()) : null,
+            bond.getWaPrice(),
             Timestamp.valueOf(bond.getUpdatedAt()), bond.getId());
         
         return bond;
@@ -100,6 +102,20 @@ public class BondRepository {
         jdbcTemplate.update(sql, ticker, couponValue, maturityDate != null ? Date.valueOf(maturityDate) : null);
     }
     
+    public void upsertBond(String ticker, BigDecimal couponValue, LocalDate maturityDate, BigDecimal waPrice) {
+        String sql = """
+            INSERT INTO bonds (ticker, coupon_value, maturity_date, wa_price, created_at, updated_at)
+            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ON CONFLICT (ticker)
+            DO UPDATE SET
+                coupon_value = EXCLUDED.coupon_value,
+                maturity_date = EXCLUDED.maturity_date,
+                wa_price = EXCLUDED.wa_price,
+                updated_at = CURRENT_TIMESTAMP
+            """;
+        jdbcTemplate.update(sql, ticker, couponValue, maturityDate != null ? Date.valueOf(maturityDate) : null, waPrice);
+    }
+    
     private static class BondRowMapper implements RowMapper<Bond> {
         @Override
         public Bond mapRow(ResultSet rs, int rowNum) throws SQLException {
@@ -112,6 +128,8 @@ public class BondRepository {
             if (maturityDate != null) {
                 bond.setMaturityDate(maturityDate.toLocalDate());
             }
+            
+            bond.setWaPrice(rs.getBigDecimal("wa_price"));
             
             Timestamp createdAt = rs.getTimestamp("created_at");
             if (createdAt != null) {

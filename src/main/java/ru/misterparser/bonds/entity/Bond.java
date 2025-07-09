@@ -10,6 +10,7 @@ public class Bond {
     private String ticker;
     private BigDecimal couponValue;
     private LocalDate maturityDate;
+    private BigDecimal waPrice;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     
@@ -29,6 +30,14 @@ public class Bond {
         this.ticker = ticker;
         this.couponValue = couponValue;
         this.maturityDate = maturityDate;
+    }
+    
+    public Bond(String ticker, BigDecimal couponValue, LocalDate maturityDate, BigDecimal waPrice) {
+        this();
+        this.ticker = ticker;
+        this.couponValue = couponValue;
+        this.maturityDate = maturityDate;
+        this.waPrice = waPrice;
     }
     
     public Long getId() {
@@ -77,5 +86,13 @@ public class Bond {
     
     public void setMaturityDate(LocalDate maturityDate) {
         this.maturityDate = maturityDate;
+    }
+    
+    public BigDecimal getWaPrice() {
+        return waPrice;
+    }
+    
+    public void setWaPrice(BigDecimal waPrice) {
+        this.waPrice = waPrice;
     }
 }
