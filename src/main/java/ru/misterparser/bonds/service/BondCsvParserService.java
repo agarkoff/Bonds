@@ -16,7 +16,8 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 @Service
 public class BondCsvParserService {
@@ -54,6 +55,7 @@ public class BondCsvParserService {
                 String[] headers = null;
                 int secidIndex = -1;
                 int couponValueIndex = -1;
+                int matdateIndex = -1;
                 int processedCount = 0;
                 
                 while ((line = csvReader.readNext()) != null) {
@@ -63,6 +65,7 @@ public class BondCsvParserService {
                         headers = line;
                         secidIndex = findColumnIndex(headers, "SECID");
                         couponValueIndex = findColumnIndex(headers, "COUPONVALUE");
+                        matdateIndex = findColumnIndex(headers, "MATDATE");
                         
                         if (secidIndex == -1 || couponValueIndex == -1) {
                             logger.error("Required columns not found. SECID: {}, COUPONVALUE: {}", 
@@ -70,8 +73,8 @@ public class BondCsvParserService {
                             return 0;
                         }
                         
-                        logger.info("Found headers at line 3. SECID index: {}, COUPONVALUE index: {}", 
-                            secidIndex, couponValueIndex);
+                        logger.info("Found headers at line 3. SECID index: {}, COUPONVALUE index: {}, MATDATE index: {}", 
+                            secidIndex, couponValueIndex, matdateIndex);
                         continue;
                     }
 
@@ -80,14 +83,18 @@ public class BondCsvParserService {
                     }
                     
                     try {
-                        if (line.length > Math.max(secidIndex, couponValueIndex)) {
+                        int maxIndex = Math.max(secidIndex, Math.max(couponValueIndex, matdateIndex));
+                        if (line.length > maxIndex) {
                             String ticker = line[secidIndex] != null ? line[secidIndex].trim() : "";
                             String couponValueStr = line[couponValueIndex] != null ? line[couponValueIndex].trim() : "";
+                            String matdateStr = matdateIndex != -1 && line[matdateIndex] != null ? line[matdateIndex].trim() : "";
                             
                             if (!ticker.isEmpty() && !couponValueStr.isEmpty()) {
                                 BigDecimal couponValue = parseCouponValue(couponValueStr);
+                                LocalDate maturityDate = parseMaturityDate(matdateStr);
+                                
                                 if (couponValue != null) {
-                                    bondRepository.upsertBond(ticker, couponValue);
+                                    bondRepository.upsertBond(ticker, couponValue, maturityDate);
                                     processedCount++;
                                     
                                     if (processedCount % 100 == 0) {
@@ -133,6 +140,20 @@ public class BondCsvParserService {
             return new BigDecimal(cleanValue);
         } catch (NumberFormatException e) {
             logger.warn("Invalid coupon value: {}", couponValueStr);
+            return null;
+        }
+    }
+    
+    private LocalDate parseMaturityDate(String matdateStr) {
+        try {
+            if (matdateStr.isEmpty() || "null".equalsIgnoreCase(matdateStr)) {
+                return null;
+            }
+            
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+            return LocalDate.parse(matdateStr, formatter);
+        } catch (Exception e) {
+            logger.warn("Invalid maturity date: {}", matdateStr);
             return null;
         }
     }

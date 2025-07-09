@@ -1,6 +1,7 @@
 package ru.misterparser.bonds.entity;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public class Bond {
@@ -8,6 +9,7 @@ public class Bond {
     private Long id;
     private String ticker;
     private BigDecimal couponValue;
+    private LocalDate maturityDate;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     
@@ -20,6 +22,13 @@ public class Bond {
         this();
         this.ticker = ticker;
         this.couponValue = couponValue;
+    }
+    
+    public Bond(String ticker, BigDecimal couponValue, LocalDate maturityDate) {
+        this();
+        this.ticker = ticker;
+        this.couponValue = couponValue;
+        this.maturityDate = maturityDate;
     }
     
     public Long getId() {
@@ -60,5 +69,13 @@ public class Bond {
     
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+    
+    public LocalDate getMaturityDate() {
+        return maturityDate;
+    }
+    
+    public void setMaturityDate(LocalDate maturityDate) {
+        this.maturityDate = maturityDate;
     }
 }

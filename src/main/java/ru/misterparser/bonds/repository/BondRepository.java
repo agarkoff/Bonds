@@ -7,9 +7,11 @@ import org.springframework.stereotype.Repository;
 import ru.misterparser.bonds.entity.Bond;
 
 import java.math.BigDecimal;
+import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -54,13 +56,14 @@ public class BondRepository {
     }
     
     private Bond insert(Bond bond) {
-        String sql = "INSERT INTO bonds (ticker, coupon_value, created_at, updated_at) VALUES (?, ?, ?, ?) RETURNING id";
+        String sql = "INSERT INTO bonds (ticker, coupon_value, maturity_date, created_at, updated_at) VALUES (?, ?, ?, ?, ?) RETURNING id";
         LocalDateTime now = LocalDateTime.now();
         bond.setCreatedAt(now);
         bond.setUpdatedAt(now);
         
         Long id = jdbcTemplate.queryForObject(sql, Long.class, 
             bond.getTicker(), bond.getCouponValue(), 
+            bond.getMaturityDate() != null ? Date.valueOf(bond.getMaturityDate()) : null,
             Timestamp.valueOf(bond.getCreatedAt()), 
             Timestamp.valueOf(bond.getUpdatedAt()));
         
@@ -69,10 +72,11 @@ public class BondRepository {
     }
     
     private Bond update(Bond bond) {
-        String sql = "UPDATE bonds SET ticker = ?, coupon_value = ?, updated_at = ? WHERE id = ?";
+        String sql = "UPDATE bonds SET ticker = ?, coupon_value = ?, maturity_date = ?, updated_at = ? WHERE id = ?";
         bond.setUpdatedAt(LocalDateTime.now());
         
         jdbcTemplate.update(sql, bond.getTicker(), bond.getCouponValue(), 
+            bond.getMaturityDate() != null ? Date.valueOf(bond.getMaturityDate()) : null,
             Timestamp.valueOf(bond.getUpdatedAt()), bond.getId());
         
         return bond;
@@ -83,16 +87,17 @@ public class BondRepository {
         jdbcTemplate.update(sql, id);
     }
     
-    public void upsertBond(String ticker, BigDecimal couponValue) {
+    public void upsertBond(String ticker, BigDecimal couponValue, LocalDate maturityDate) {
         String sql = """
-            INSERT INTO bonds (ticker, coupon_value, created_at, updated_at)
-            VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            INSERT INTO bonds (ticker, coupon_value, maturity_date, created_at, updated_at)
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             ON CONFLICT (ticker)
             DO UPDATE SET
                 coupon_value = EXCLUDED.coupon_value,
+                maturity_date = EXCLUDED.maturity_date,
                 updated_at = CURRENT_TIMESTAMP
             """;
-        jdbcTemplate.update(sql, ticker, couponValue);
+        jdbcTemplate.update(sql, ticker, couponValue, maturityDate != null ? Date.valueOf(maturityDate) : null);
     }
     
     private static class BondRowMapper implements RowMapper<Bond> {
@@ -102,6 +107,11 @@ public class BondRepository {
             bond.setId(rs.getLong("id"));
             bond.setTicker(rs.getString("ticker"));
             bond.setCouponValue(rs.getBigDecimal("coupon_value"));
+            
+            Date maturityDate = rs.getDate("maturity_date");
+            if (maturityDate != null) {
+                bond.setMaturityDate(maturityDate.toLocalDate());
+            }
             
             Timestamp createdAt = rs.getTimestamp("created_at");
             if (createdAt != null) {
