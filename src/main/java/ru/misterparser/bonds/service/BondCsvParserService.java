@@ -31,7 +31,11 @@ public class BondCsvParserService {
     
     @Scheduled(cron = "0 0 2 * * *")
     public void parseBondsFromCsv() {
-        logger.info("Starting scheduled CSV parsing from URL: {}", csvUrl);
+        parseAndSaveBonds();
+    }
+    
+    public int parseAndSaveBonds() {
+        logger.info("Starting CSV parsing from URL: {}", csvUrl);
         
         try {
             URL url = new URL(csvUrl);
@@ -63,14 +67,14 @@ public class BondCsvParserService {
                         if (secidIndex == -1 || couponValueIndex == -1) {
                             logger.error("Required columns not found. SECID: {}, COUPONVALUE: {}", 
                                 secidIndex, couponValueIndex);
-                            return;
+                            return 0;
                         }
                         
                         logger.info("Found headers at line 3. SECID index: {}, COUPONVALUE index: {}", 
                             secidIndex, couponValueIndex);
                         continue;
                     }
-                    
+
                     if (lineNumber < 4) {
                         continue;
                     }
@@ -98,10 +102,11 @@ public class BondCsvParserService {
                 }
                 
                 logger.info("CSV parsing completed. Processed {} bonds", processedCount);
-                
+                return processedCount;
             }
         } catch (Exception e) {
             logger.error("Error parsing CSV file: {}", e.getMessage(), e);
+            return 0;
         }
     }
     
