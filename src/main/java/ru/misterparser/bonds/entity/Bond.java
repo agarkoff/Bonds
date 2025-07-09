@@ -1,9 +1,16 @@
 package ru.misterparser.bonds.entity;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Bond {
     
     private Long id;
@@ -14,103 +21,4 @@ public class Bond {
     private BigDecimal faceValue;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    
-    public Bond() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
-    
-    public Bond(String ticker, BigDecimal couponValue) {
-        this();
-        this.ticker = ticker;
-        this.couponValue = couponValue;
-    }
-    
-    public Bond(String ticker, BigDecimal couponValue, LocalDate maturityDate) {
-        this();
-        this.ticker = ticker;
-        this.couponValue = couponValue;
-        this.maturityDate = maturityDate;
-    }
-    
-    public Bond(String ticker, BigDecimal couponValue, LocalDate maturityDate, BigDecimal waPrice) {
-        this();
-        this.ticker = ticker;
-        this.couponValue = couponValue;
-        this.maturityDate = maturityDate;
-        this.waPrice = waPrice;
-    }
-    
-    public Bond(String ticker, BigDecimal couponValue, LocalDate maturityDate, BigDecimal waPrice, BigDecimal faceValue) {
-        this();
-        this.ticker = ticker;
-        this.couponValue = couponValue;
-        this.maturityDate = maturityDate;
-        this.waPrice = waPrice;
-        this.faceValue = faceValue;
-    }
-    
-    public Long getId() {
-        return id;
-    }
-    
-    public void setId(Long id) {
-        this.id = id;
-    }
-    
-    public String getTicker() {
-        return ticker;
-    }
-    
-    public void setTicker(String ticker) {
-        this.ticker = ticker;
-    }
-    
-    public BigDecimal getCouponValue() {
-        return couponValue;
-    }
-    
-    public void setCouponValue(BigDecimal couponValue) {
-        this.couponValue = couponValue;
-    }
-    
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-    
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-    
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-    
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-    
-    public LocalDate getMaturityDate() {
-        return maturityDate;
-    }
-    
-    public void setMaturityDate(LocalDate maturityDate) {
-        this.maturityDate = maturityDate;
-    }
-    
-    public BigDecimal getWaPrice() {
-        return waPrice;
-    }
-    
-    public void setWaPrice(BigDecimal waPrice) {
-        this.waPrice = waPrice;
-    }
-    
-    public BigDecimal getFaceValue() {
-        return faceValue;
-    }
-    
-    public void setFaceValue(BigDecimal faceValue) {
-        this.faceValue = faceValue;
-    }
 }
