@@ -91,33 +91,6 @@ public class BondRepository {
         jdbcTemplate.update(sql, id);
     }
     
-    public void upsertBond(String ticker, BigDecimal couponValue, LocalDate maturityDate) {
-        String sql = """
-            INSERT INTO bonds (ticker, coupon_value, maturity_date, created_at, updated_at)
-            VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-            ON CONFLICT (ticker)
-            DO UPDATE SET
-                coupon_value = EXCLUDED.coupon_value,
-                maturity_date = EXCLUDED.maturity_date,
-                updated_at = CURRENT_TIMESTAMP
-            """;
-        jdbcTemplate.update(sql, ticker, couponValue, maturityDate != null ? Date.valueOf(maturityDate) : null);
-    }
-    
-    public void upsertBond(String ticker, BigDecimal couponValue, LocalDate maturityDate, BigDecimal waPrice) {
-        String sql = """
-            INSERT INTO bonds (ticker, coupon_value, maturity_date, wa_price, created_at, updated_at)
-            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-            ON CONFLICT (ticker)
-            DO UPDATE SET
-                coupon_value = EXCLUDED.coupon_value,
-                maturity_date = EXCLUDED.maturity_date,
-                wa_price = EXCLUDED.wa_price,
-                updated_at = CURRENT_TIMESTAMP
-            """;
-        jdbcTemplate.update(sql, ticker, couponValue, maturityDate != null ? Date.valueOf(maturityDate) : null, waPrice);
-    }
-    
     public void upsertBond(String ticker, BigDecimal couponValue, LocalDate maturityDate, BigDecimal waPrice, BigDecimal faceValue) {
         String sql = """
             INSERT INTO bonds (ticker, coupon_value, maturity_date, wa_price, face_value, created_at, updated_at)
