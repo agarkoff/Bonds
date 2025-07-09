@@ -19,6 +19,7 @@ public class Bond {
     private LocalDate maturityDate;
     private BigDecimal waPrice;
     private BigDecimal faceValue;
+    private Integer couponFrequency;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
