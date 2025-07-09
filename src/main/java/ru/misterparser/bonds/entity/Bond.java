@@ -11,6 +11,7 @@ public class Bond {
     private BigDecimal couponValue;
     private LocalDate maturityDate;
     private BigDecimal waPrice;
+    private BigDecimal faceValue;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     
@@ -38,6 +39,15 @@ public class Bond {
         this.couponValue = couponValue;
         this.maturityDate = maturityDate;
         this.waPrice = waPrice;
+    }
+    
+    public Bond(String ticker, BigDecimal couponValue, LocalDate maturityDate, BigDecimal waPrice, BigDecimal faceValue) {
+        this();
+        this.ticker = ticker;
+        this.couponValue = couponValue;
+        this.maturityDate = maturityDate;
+        this.waPrice = waPrice;
+        this.faceValue = faceValue;
     }
     
     public Long getId() {
@@ -94,5 +104,13 @@ public class Bond {
     
     public void setWaPrice(BigDecimal waPrice) {
         this.waPrice = waPrice;
+    }
+    
+    public BigDecimal getFaceValue() {
+        return faceValue;
+    }
+    
+    public void setFaceValue(BigDecimal faceValue) {
+        this.faceValue = faceValue;
     }
 }
