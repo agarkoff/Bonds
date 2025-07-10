@@ -15,6 +15,7 @@ import ru.misterparser.bonds.repository.BondRepository;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URL;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -27,6 +28,9 @@ public class BondCsvParserService {
     @Value("${moex.bonds-csv}")
     private String csvUrl;
     
+    @Value("${moex.fee}")
+    private BigDecimal feePercent;
+    
     @Autowired
     private BondRepository bondRepository;
     
@@ -34,7 +38,7 @@ public class BondCsvParserService {
     public void parseBondsFromCsv() {
         parseAndSaveBonds();
     }
-    
+
     public int parseAndSaveBonds() {
         logger.info("Starting CSV parsing from URL: {}", csvUrl);
         
@@ -109,11 +113,11 @@ public class BondCsvParserService {
                                 Integer couponFrequency = parseCouponFrequency(couponFrequencyStr);
                                 Integer couponDaysPassed = parseCouponFrequency(couponDaysPassedStr);
                                 
-                                BigDecimal nkd = calculateNkd(couponDaysPassed, couponValue, couponFrequency);
-                                
-                                if (couponValue != null) {
-                                    bondRepository.upsertBond(ticker, couponValue, maturityDate, waPrice, faceValue, couponFrequency, nkd);
                                 if (couponValue != null && maturityDate != null && waPrice != null && faceValue != null && couponFrequency != null && couponDaysPassed != null) {
+                                    BigDecimal nkd = calculateNkd(couponDaysPassed, couponValue, couponFrequency);
+                                    BigDecimal fee = calculateFee(waPrice, faceValue);
+                                    BigDecimal profit = calculateProfit(faceValue, couponValue, waPrice, nkd, fee, maturityDate, couponFrequency);
+                                    
                                     bondRepository.upsertBond(ticker, couponValue, maturityDate, waPrice, faceValue, couponFrequency, nkd, fee, profit);
                                     processedCount++;
                                     
@@ -197,7 +201,49 @@ public class BondCsvParserService {
         } catch (Exception e) {
             logger.warn("Error calculating NKD for couponDaysPassed: {}, couponValue: {}, couponFrequency: {}", 
                 couponDaysPassed, couponValue, couponFrequency);
-            return null;
+            return BigDecimal.ZERO;
+        }
+    }
+    
+    private BigDecimal calculateFee(BigDecimal waPrice, BigDecimal faceValue) {
+        try {
+            // Комиссия = fee × wa_price
+            BigDecimal waPriceInRubles = waPrice.multiply(faceValue).divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+            return waPriceInRubles.multiply(feePercent.divide(new BigDecimal(100), 4, RoundingMode.HALF_UP));
+        } catch (Exception e) {
+            logger.warn("Error calculating fee for waPrice: {}, faceValue: {}", 
+                waPrice, faceValue);
+            return BigDecimal.ZERO;
+        }
+    }
+    
+    private BigDecimal calculateProfit(BigDecimal faceValue, BigDecimal couponValue, BigDecimal waPrice, BigDecimal nkd, BigDecimal fee, LocalDate maturityDate, Integer couponFrequency) {
+        try {
+            // Затраты = wa_price + nkd + fee × wa_price
+            BigDecimal waPriceInRubles = waPrice.multiply(faceValue).divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+            BigDecimal costs = waPriceInRubles
+                    .add(nkd)
+                    .add(fee);
+            
+            // Дневной купон = coupon_value × coupon_frequency / 365
+            BigDecimal dailyCoupon = couponValue.multiply(BigDecimal.valueOf(couponFrequency))
+                    .divide(BigDecimal.valueOf(365), 4, RoundingMode.HALF_UP);
+            
+            // Разница дат в годах = (maturity_date – current_date) / 365
+            LocalDate currentDate = LocalDate.now();
+            long daysDifference = java.time.temporal.ChronoUnit.DAYS.between(currentDate, maturityDate);
+
+            // Купон погашения = разница дат в днях × дневной купон + nkd
+            BigDecimal couponRedemption = dailyCoupon.multiply(new BigDecimal(daysDifference)).add(nkd);
+            
+            // Доход = face_value + coupon_value / coupon_frequency × (maturity_date – current_date) + nkd
+            BigDecimal income = faceValue.add(couponRedemption);
+            
+            // Прибыль = Доход – Затраты
+            return income.subtract(costs);
+        } catch (Exception e) {
+            logger.warn("Error calculating profit for faceValue: {}, couponValue: {}, waPrice: {}, nkd: {}, fee: {}", 
+                faceValue, couponValue, waPrice, nkd, fee);
             return BigDecimal.ZERO;
         }
     }

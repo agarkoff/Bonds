@@ -56,7 +56,7 @@ public class BondRepository {
     }
     
     private Bond insert(Bond bond) {
-        String sql = "INSERT INTO bonds (ticker, coupon_value, maturity_date, wa_price, face_value, coupon_frequency, nkd, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id";
+        String sql = "INSERT INTO bonds (ticker, coupon_value, maturity_date, wa_price, face_value, coupon_frequency, nkd, fee, profit, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id";
         LocalDateTime now = LocalDateTime.now();
         bond.setCreatedAt(now);
         bond.setUpdatedAt(now);
@@ -68,6 +68,8 @@ public class BondRepository {
             bond.getFaceValue(),
             bond.getCouponFrequency(),
             bond.getNkd(),
+            bond.getFee(),
+            bond.getProfit(),
             Timestamp.valueOf(bond.getCreatedAt()), 
             Timestamp.valueOf(bond.getUpdatedAt()));
         
@@ -76,7 +78,7 @@ public class BondRepository {
     }
     
     private Bond update(Bond bond) {
-        String sql = "UPDATE bonds SET ticker = ?, coupon_value = ?, maturity_date = ?, wa_price = ?, face_value = ?, coupon_frequency = ?, nkd = ?, updated_at = ? WHERE id = ?";
+        String sql = "UPDATE bonds SET ticker = ?, coupon_value = ?, maturity_date = ?, wa_price = ?, face_value = ?, coupon_frequency = ?, nkd = ?, fee = ?, profit = ?, updated_at = ? WHERE id = ?";
         bond.setUpdatedAt(LocalDateTime.now());
         
         jdbcTemplate.update(sql, bond.getTicker(), bond.getCouponValue(), 
@@ -85,6 +87,8 @@ public class BondRepository {
             bond.getFaceValue(),
             bond.getCouponFrequency(),
             bond.getNkd(),
+            bond.getFee(),
+            bond.getProfit(),
             Timestamp.valueOf(bond.getUpdatedAt()), bond.getId());
         
         return bond;
@@ -111,10 +115,10 @@ public class BondRepository {
         jdbcTemplate.update(sql, ticker, couponValue, maturityDate != null ? Date.valueOf(maturityDate) : null, waPrice, faceValue, couponFrequency);
     }
     
-    public void upsertBond(String ticker, BigDecimal couponValue, LocalDate maturityDate, BigDecimal waPrice, BigDecimal faceValue, Integer couponFrequency, BigDecimal nkd) {
+    public void upsertBond(String ticker, BigDecimal couponValue, LocalDate maturityDate, BigDecimal waPrice, BigDecimal faceValue, Integer couponFrequency, BigDecimal nkd, BigDecimal fee, BigDecimal profit) {
         String sql = """
-            INSERT INTO bonds (ticker, coupon_value, maturity_date, wa_price, face_value, coupon_frequency, nkd, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            INSERT INTO bonds (ticker, coupon_value, maturity_date, wa_price, face_value, coupon_frequency, nkd, fee, profit, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             ON CONFLICT (ticker)
             DO UPDATE SET
                 coupon_value = EXCLUDED.coupon_value,
@@ -123,9 +127,11 @@ public class BondRepository {
                 face_value = EXCLUDED.face_value,
                 coupon_frequency = EXCLUDED.coupon_frequency,
                 nkd = EXCLUDED.nkd,
+                fee = EXCLUDED.fee,
+                profit = EXCLUDED.profit,
                 updated_at = CURRENT_TIMESTAMP
             """;
-        jdbcTemplate.update(sql, ticker, couponValue, maturityDate != null ? Date.valueOf(maturityDate) : null, waPrice, faceValue, couponFrequency, nkd);
+        jdbcTemplate.update(sql, ticker, couponValue, maturityDate != null ? Date.valueOf(maturityDate) : null, waPrice, faceValue, couponFrequency, nkd, fee, profit);
     }
     
     private static class BondRowMapper implements RowMapper<Bond> {
@@ -148,6 +154,8 @@ public class BondRepository {
                 bond.setCouponFrequency(null);
             }
             bond.setNkd(rs.getBigDecimal("nkd"));
+            bond.setFee(rs.getBigDecimal("fee"));
+            bond.setProfit(rs.getBigDecimal("profit"));
             
             Timestamp createdAt = rs.getTimestamp("created_at");
             if (createdAt != null) {
