@@ -31,6 +31,9 @@ public class BondCsvParserService {
     @Value("${moex.fee}")
     private BigDecimal feePercent;
     
+    @Value("${moex.ndfl}")
+    private BigDecimal ndflPercent;
+    
     @Autowired
     private BondRepository bondRepository;
     
@@ -121,8 +124,9 @@ public class BondCsvParserService {
                                     BigDecimal nkd = calculateNkd(couponDaysPassed, couponValue, couponLength);
                                     BigDecimal fee = calculateFee(waPrice, faceValue);
                                     BigDecimal profit = calculateProfit(faceValue, couponValue, waPrice, nkd, fee, maturityDate, couponLength);
+                                    BigDecimal netProfit = calculateNetProfit(profit);
                                     
-                                    bondRepository.upsertBond(ticker, couponValue, maturityDate, waPrice, faceValue, couponFrequency, couponLength, nkd, fee, profit);
+                                    bondRepository.upsertBond(ticker, couponValue, maturityDate, waPrice, faceValue, couponFrequency, couponLength, nkd, fee, profit, netProfit);
                                     processedCount++;
                                     
                                     if (processedCount % 100 == 0) {
@@ -244,6 +248,20 @@ public class BondCsvParserService {
         } catch (Exception e) {
             logger.warn("Error calculating profit for faceValue: {}, couponValue: {}, waPrice: {}, nkd: {}, fee: {}", 
                 faceValue, couponValue, waPrice, nkd, fee);
+            return BigDecimal.ZERO;
+        }
+    }
+    
+    private BigDecimal calculateNetProfit(BigDecimal profit) {
+        try {
+            // Чистая прибыль = прибыль - (прибыль * ndfl / 100)
+            if (profit.compareTo(BigDecimal.ZERO) <= 0) {
+                return profit; // Если убыток, налог не платится
+            }
+            BigDecimal tax = profit.multiply(ndflPercent).divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+            return profit.subtract(tax);
+        } catch (Exception e) {
+            logger.warn("Error calculating net profit for profit: {}, ndfl: {}", profit, ndflPercent);
             return BigDecimal.ZERO;
         }
     }

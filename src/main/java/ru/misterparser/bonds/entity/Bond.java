@@ -24,6 +24,7 @@ public class Bond {
     private BigDecimal nkd;
     private BigDecimal fee;
     private BigDecimal profit;
+    private BigDecimal netProfit;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

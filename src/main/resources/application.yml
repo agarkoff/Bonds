@@ -19,6 +19,7 @@ logging:
 moex:
   bonds-csv: https://iss.moex.com/iss/apps/infogrid/emission/rates.csv?columns=SECID,SHORTNAME,ISIN,FACEVALUE,FACEUNIT,ISSUESIZE,MATDATE,COUPONFREQUENCY,COUPONPERCENT,COUPONLENGTH&iss.dp=comma&iss.df=%25d.%25m.%25Y&iss.tf=%25H:%25M:%25S&iss.dtf=%25d.%25m.%25Y%20%25H:%25M:%25S&iss.only=rates&limit=unlimited&lang=ru
   fee: 0.06
+  ndfl: 13
 
 ---
 spring:
