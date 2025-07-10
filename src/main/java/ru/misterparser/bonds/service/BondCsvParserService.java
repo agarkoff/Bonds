@@ -118,9 +118,9 @@ public class BondCsvParserService {
                                 Integer couponDaysPassed = parseCouponFrequency(couponDaysPassedStr);
                                 
                                 if (couponValue != null && maturityDate != null && waPrice != null && faceValue != null && couponFrequency != null && couponLength != null && couponDaysPassed != null) {
-                                    BigDecimal nkd = calculateNkd(couponDaysPassed, couponValue, couponFrequency);
+                                    BigDecimal nkd = calculateNkd(couponDaysPassed, couponValue, couponLength);
                                     BigDecimal fee = calculateFee(waPrice, faceValue);
-                                    BigDecimal profit = calculateProfit(faceValue, couponValue, waPrice, nkd, fee, maturityDate, couponFrequency);
+                                    BigDecimal profit = calculateProfit(faceValue, couponValue, waPrice, nkd, fee, maturityDate, couponLength);
                                     
                                     bondRepository.upsertBond(ticker, couponValue, maturityDate, waPrice, faceValue, couponFrequency, couponLength, nkd, fee, profit);
                                     processedCount++;
@@ -195,16 +195,15 @@ public class BondCsvParserService {
         }
     }
     
-    private BigDecimal calculateNkd(Integer couponDaysPassed, BigDecimal couponValue, Integer couponFrequency) {
+    private BigDecimal calculateNkd(Integer couponDaysPassed, BigDecimal couponValue, Integer couponLength) {
         try {
-            // НКД = дни прошедшие с выплаты купона * величина купона * периодичность купона / 365
-            return new BigDecimal(couponDaysPassed)
-                    .multiply(couponValue)
-                    .multiply(new BigDecimal(couponFrequency))
-                    .divide(new BigDecimal(365), 4, java.math.RoundingMode.HALF_UP);
+            // Дневной купон = величина купона / coupon_length
+            // НКД = дни прошедшие с выплаты купона * дневной купон
+            BigDecimal dailyCoupon = couponValue.divide(new BigDecimal(couponLength), 4, RoundingMode.HALF_UP);
+            return new BigDecimal(couponDaysPassed + 1).multiply(dailyCoupon);
         } catch (Exception e) {
-            logger.warn("Error calculating NKD for couponDaysPassed: {}, couponValue: {}, couponFrequency: {}", 
-                couponDaysPassed, couponValue, couponFrequency);
+            logger.warn("Error calculating NKD for couponDaysPassed: {}, couponValue: {}, couponLength: {}", 
+                couponDaysPassed, couponValue, couponLength);
             return BigDecimal.ZERO;
         }
     }
@@ -221,7 +220,7 @@ public class BondCsvParserService {
         }
     }
     
-    private BigDecimal calculateProfit(BigDecimal faceValue, BigDecimal couponValue, BigDecimal waPrice, BigDecimal nkd, BigDecimal fee, LocalDate maturityDate, Integer couponFrequency) {
+    private BigDecimal calculateProfit(BigDecimal faceValue, BigDecimal couponValue, BigDecimal waPrice, BigDecimal nkd, BigDecimal fee, LocalDate maturityDate, Integer couponLength) {
         try {
             // Затраты = wa_price + nkd + fee × wa_price
             BigDecimal waPriceInRubles = waPrice.multiply(faceValue).divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
@@ -229,16 +228,13 @@ public class BondCsvParserService {
                     .add(nkd)
                     .add(fee);
             
-            // Дневной купон = coupon_value × coupon_frequency / 365
-            BigDecimal dailyCoupon = couponValue.multiply(BigDecimal.valueOf(couponFrequency))
-                    .divide(BigDecimal.valueOf(365), 4, RoundingMode.HALF_UP);
+            // Дневной купон = величина купона / coupon_length
+            BigDecimal dailyCoupon = couponValue.divide(new BigDecimal(couponLength), 4, RoundingMode.HALF_UP);
             
-            // Разница дат в годах = (maturity_date – current_date) / 365
+            // Купон погашения = разница дат в днях × дневной купон + nkd
             LocalDate currentDate = LocalDate.now();
             long daysDifference = java.time.temporal.ChronoUnit.DAYS.between(currentDate, maturityDate);
-
-            // Купон погашения = разница дат в днях × дневной купон + nkd
-            BigDecimal couponRedemption = dailyCoupon.multiply(new BigDecimal(daysDifference)).add(nkd);
+            BigDecimal couponRedemption = dailyCoupon.multiply(new BigDecimal(daysDifference - 1)).add(nkd);
             
             // Доход = face_value + coupon_value / coupon_frequency × (maturity_date – current_date) + nkd
             BigDecimal income = faceValue.add(couponRedemption);
