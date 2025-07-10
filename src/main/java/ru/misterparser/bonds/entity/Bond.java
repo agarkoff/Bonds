@@ -20,6 +20,7 @@ public class Bond {
     private BigDecimal waPrice;
     private BigDecimal faceValue;
     private Integer couponFrequency;
+    private Integer couponLength;
     private BigDecimal nkd;
     private BigDecimal fee;
     private BigDecimal profit;
