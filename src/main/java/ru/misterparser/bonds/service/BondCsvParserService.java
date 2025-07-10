@@ -113,16 +113,14 @@ public class BondCsvParserService {
                                 
                                 if (couponValue != null) {
                                     bondRepository.upsertBond(ticker, couponValue, maturityDate, waPrice, faceValue, couponFrequency, nkd);
+                                if (couponValue != null && maturityDate != null && waPrice != null && faceValue != null && couponFrequency != null && couponDaysPassed != null) {
+                                    bondRepository.upsertBond(ticker, couponValue, maturityDate, waPrice, faceValue, couponFrequency, nkd, fee, profit);
                                     processedCount++;
                                     
                                     if (processedCount % 100 == 0) {
                                         logger.info("Processed {} bonds", processedCount);
                                     }
-                                } else {
-                                    logger.error("Для тикера {} не указана величина купона", ticker);
                                 }
-                            } else {
-                                logger.error("Для тикера {} не указана величина купона", ticker);
                             }
                         }
                     } catch (Exception e) {
@@ -190,10 +188,6 @@ public class BondCsvParserService {
     }
     
     private BigDecimal calculateNkd(Integer couponDaysPassed, BigDecimal couponValue, Integer couponFrequency) {
-        if (couponDaysPassed == null || couponValue == null || couponFrequency == null) {
-            return null;
-        }
-        
         try {
             // НКД = дни прошедшие с выплаты купона * величина купона * периодичность купона / 365
             return new BigDecimal(couponDaysPassed)
@@ -204,6 +198,7 @@ public class BondCsvParserService {
             logger.warn("Error calculating NKD for couponDaysPassed: {}, couponValue: {}, couponFrequency: {}", 
                 couponDaysPassed, couponValue, couponFrequency);
             return null;
+            return BigDecimal.ZERO;
         }
     }
 }
