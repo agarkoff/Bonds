@@ -25,6 +25,7 @@ public class Bond {
     private BigDecimal fee;
     private BigDecimal profit;
     private BigDecimal netProfit;
+    private BigDecimal annualYield;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

@@ -126,12 +126,19 @@ public class BondCsvParserService {
                                     BigDecimal profit = calculateProfit(faceValue, couponValue, waPrice, nkd, fee, maturityDate, couponLength);
                                     BigDecimal netProfit = calculateNetProfit(profit);
                                     
-                                    bondRepository.upsertBond(ticker, couponValue, maturityDate, waPrice, faceValue, couponFrequency, couponLength, nkd, fee, profit, netProfit);
+                                    // Рассчитываем затраты для годовой доходности
+                                    BigDecimal waPriceInRubles = waPrice.multiply(faceValue).divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+                                    BigDecimal costs = waPriceInRubles.add(nkd).add(fee);
+                                    BigDecimal annualYield = calculateAnnualYield(netProfit, maturityDate, costs);
+                                    
+                                    bondRepository.upsertBond(ticker, couponValue, maturityDate, waPrice, faceValue, couponFrequency, couponLength, nkd, fee, profit, netProfit, annualYield);
                                     processedCount++;
                                     
                                     if (processedCount % 100 == 0) {
                                         logger.info("Processed {} bonds", processedCount);
                                     }
+                                } else {
+                                    logger.info("couponValue={} maturityDate={} waPrice={} faceValue={} couponFrequency={} couponLength={} couponDaysPassed={}", couponValue, maturityDate, waPrice, faceValue, couponFrequency, couponLength, couponDaysPassed);
                                 }
                             }
                         }
@@ -262,6 +269,33 @@ public class BondCsvParserService {
             return profit.subtract(tax);
         } catch (Exception e) {
             logger.warn("Error calculating net profit for profit: {}, ndfl: {}", profit, ndflPercent);
+            return BigDecimal.ZERO;
+        }
+    }
+    
+    private BigDecimal calculateAnnualYield(BigDecimal netProfit, LocalDate maturityDate, BigDecimal costs) {
+        try {
+            if (costs.compareTo(BigDecimal.ZERO) == 0) {
+                return BigDecimal.ZERO; // Избегаем деления на ноль
+            }
+            
+            LocalDate currentDate = LocalDate.now();
+            long daysDifference = java.time.temporal.ChronoUnit.DAYS.between(currentDate, maturityDate);
+            
+            if (daysDifference <= 0) {
+                return BigDecimal.ZERO; // Если дата погашения уже прошла
+            }
+            
+            // Годовая доходность = (чистая прибыль / дни до погашения) * 365 / затраты * 100
+            BigDecimal dailyYield = netProfit.divide(new BigDecimal(daysDifference), 8, RoundingMode.HALF_UP);
+            BigDecimal annualYield = dailyYield.multiply(BigDecimal.valueOf(365))
+                    .divide(costs, 8, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100)); // Конвертируем в проценты
+            
+            return annualYield.setScale(4, RoundingMode.HALF_UP);
+        } catch (Exception e) {
+            logger.warn("Error calculating annual yield for netProfit: {}, maturityDate: {}, costs: {}", 
+                netProfit, maturityDate, costs);
             return BigDecimal.ZERO;
         }
     }
