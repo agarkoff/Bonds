@@ -1,8 +1,8 @@
 package ru.misterparser.bonds.service;
 
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.misterparser.bonds.dto.BondData;
@@ -12,18 +12,14 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class BondProcessingFacadeService {
     
     private static final Logger logger = LoggerFactory.getLogger(BondProcessingFacadeService.class);
     
-    @Autowired
-    private BondCsvParserService csvParserService;
-    
-    @Autowired
-    private BondCalculationService calculationService;
-    
-    @Autowired
-    private BondRepository bondRepository;
+    private final BondCsvParserService csvParserService;
+    private final BondCalculationService calculationService;
+    private final BondRepository bondRepository;
     
     @Scheduled(cron = "0 0 2 * * *")
     public void processAllBonds() {

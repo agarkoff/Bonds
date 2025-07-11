@@ -1,5 +1,6 @@
 package ru.misterparser.bonds.service;
 
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,15 +11,16 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 
 @Service
+@RequiredArgsConstructor
 public class BondCalculationService {
     
     private static final Logger logger = LoggerFactory.getLogger(BondCalculationService.class);
     
     @Value("${moex.fee}")
-    private BigDecimal feePercent;
+    private final BigDecimal feePercent;
     
     @Value("${moex.ndfl}")
-    private BigDecimal ndflPercent;
+    private final BigDecimal ndflPercent;
     
     public BigDecimal calculateNkd(Integer couponDaysPassed, BigDecimal couponValue, Integer couponLength) {
         try {

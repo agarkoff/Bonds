@@ -4,6 +4,7 @@ import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,12 +21,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class BondCsvParserService {
     
     private static final Logger logger = LoggerFactory.getLogger(BondCsvParserService.class);
     
     @Value("${moex.bonds-csv}")
-    private String csvUrl;
+    private final String csvUrl;
     
     public List<BondData> parseBondsFromCsv() {
         logger.info("Starting CSV parsing from URL: {}", csvUrl);
