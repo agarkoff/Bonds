@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Топ облигаций по доходности</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.2em;
+            font-weight: 300;
+        }
+        
+        .info {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            padding: 20px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        
+        th {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 12px 8px;
+            text-align: center;
+            font-weight: 600;
+            border: 1px solid #dee2e6;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        td {
+            padding: 10px 8px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+            white-space: nowrap;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        tr:hover {
+            background-color: #e3f2fd;
+        }
+        
+        .ticker {
+            font-weight: bold;
+            color: #1976d2;
+            min-width: 80px;
+        }
+        
+        .short-name {
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align: left;
+            padding-left: 12px;
+        }
+        
+        .group-header {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            font-weight: bold;
+            color: #1565c0;
+        }
+        
+        .costs-group { border-left: 4px solid #ff9800; }
+        .income-group { border-left: 4px solid #4caf50; }
+        .results-group { border-left: 4px solid #9c27b0; }
+        
+        .currency::after {
+            content: " ₽";
+            color: #666;
+        }
+        
+        .percentage::after {
+            content: "%";
+            color: #666;
+        }
+        
+        .yield-cell {
+            font-weight: bold;
+            border-radius: 4px;
+            padding: 8px !important;
+        }
+        
+        .controls {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+        }
+        
+        .form-group {
+            display: inline-block;
+            margin-right: 20px;
+        }
+        
+        label {
+            font-weight: 600;
+            margin-right: 10px;
+        }
+        
+        input, button {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .date {
+            color: #666;
+            font-size: 11px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏆 Топ облигаций по доходности</h1>
+        </div>
+        
+        <div class="info">
+            <div>
+                <strong>Показано:</strong> <span th:text="${totalBonds}">0</span> облигаций
+            </div>
+            <div>
+                <strong>Обновлено:</strong> <span th:text="${#temporals.format(#temporals.createNow(), 'dd.MM.yyyy HH:mm')}"></span>
+            </div>
+        </div>
+        
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th rowspan="2">Тикер</th>
+                        <th rowspan="2">Название</th>
+                        <th rowspan="2">Размер купона</th>
+                        <th rowspan="2">Погашение</th>
+                        <th colspan="4" class="group-header costs-group">💰 Затраты</th>
+                        <th colspan="3" class="group-header income-group">📈 Доходы</th>
+                        <th rowspan="2" class="group-header results-group">💎 Чистая прибыль</th>
+                        <th rowspan="2" class="group-header results-group">🎯 Годовая доходность</th>
+                    </tr>
+                    <tr>
+                        <th class="costs-group">Цена</th>
+                        <th class="costs-group">НКД</th>
+                        <th class="costs-group">Комиссия</th>
+                        <th class="costs-group">Итого затраты</th>
+                        <th class="income-group">Номинал</th>
+                        <th class="income-group">Купон</th>
+                        <th class="income-group">Итого доход</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="bond : ${bonds}">
+                        <td class="ticker" th:text="${bond.ticker}">BOND</td>
+                        <td class="short-name" th:text="${bond.shortName}" th:title="${bond.shortName}">Название облигации</td>
+                        <td class="currency" th:text="${#numbers.formatDecimal(bond.couponValue, 0, 2)}">0.00</td>
+                        <td class="date" th:text="${#temporals.format(bond.maturityDate, 'dd.MM.yyyy')}">01.01.2025</td>
+                        
+                        <!-- Блок затрат -->
+                        <td class="currency costs-group" th:text="${#numbers.formatDecimal(bond.waPrice, 0, 2)}">0.00</td>
+                        <td class="currency costs-group" th:text="${#numbers.formatDecimal(bond.nkd, 0, 2)}">0.00</td>
+                        <td class="currency costs-group" th:text="${#numbers.formatDecimal(bond.fee, 0, 2)}">0.00</td>
+                        <td class="currency costs-group" th:text="${#numbers.formatDecimal(bond.costs, 0, 2)}" style="font-weight: bold;">0.00</td>
+                        
+                        <!-- Блок доходов -->
+                        <td class="currency income-group" th:text="${#numbers.formatDecimal(bond.faceValue, 0, 2)}">0.00</td>
+                        <td class="currency income-group" th:text="${#numbers.formatDecimal(bond.couponRedemption, 0, 2)}">0.00</td>
+                        <td class="currency income-group" th:text="${#numbers.formatDecimal(bond.totalIncome, 0, 2)}" style="font-weight: bold;">0.00</td>
+                        
+                        <!-- Результаты -->
+                        <td class="currency results-group" th:text="${#numbers.formatDecimal(bond.netProfit, 0, 2)}" 
+                            th:style="'font-weight: bold; color: ' + (${bond.netProfit} >= 0 ? '#4caf50' : '#f44336')">0.00</td>
+                        
+                        <!-- Годовая доходность с градиентом -->
+                        <td class="yield-cell results-group" 
+                            th:text="${#numbers.formatDecimal(bond.annualYield, 0, 2)} + '%'"
+                            th:style="'background-color: ' + ${T(ru.misterparser.bonds.util.ColorUtils).getYieldColor(bond.annualYield, minYield, maxYield)} + '; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.7);'">
+                            0.00%
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="controls">
+            <form method="get" style="display: inline;">
+                <div class="form-group">
+                    <label for="limit">Количество облигаций:</label>
+                    <input type="number" id="limit" name="limit" th:value="${limit}" min="10" max="500" step="10">
+                </div>
+                <button type="submit">🔄 Обновить</button>
+            </form>
+            
+            <div style="float: right;">
+                <a href="/api/bonds" style="text-decoration: none;">
+                    <button type="button">📊 API данные</button>
+                </a>
+                <button type="button" onclick="window.location.reload()">♻️ Перезагрузить</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
