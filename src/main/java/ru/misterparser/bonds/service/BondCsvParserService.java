@@ -61,6 +61,7 @@ public class BondCsvParserService {
                 int lineNumber = 0;
                 String[] headers = null;
                 int secidIndex = -1;
+                int shortNameIndex = -1;
                 int couponValueIndex = -1;
                 int matdateIndex = -1;
                 int wapriceIndex = -1;
@@ -76,6 +77,7 @@ public class BondCsvParserService {
                     if (lineNumber == 3) {
                         headers = line;
                         secidIndex = findColumnIndex(headers, "SECID");
+                        shortNameIndex = findColumnIndex(headers, "SHORTNAME");
                         couponValueIndex = findColumnIndex(headers, "COUPONVALUE");
                         matdateIndex = findColumnIndex(headers, "MATDATE");
                         wapriceIndex = findColumnIndex(headers, "WAPRICE");
@@ -90,8 +92,8 @@ public class BondCsvParserService {
                             return 0;
                         }
                         
-                        logger.info("Found headers at line 3. SECID index: {}, COUPONVALUE index: {}, MATDATE index: {}, WAPRICE index: {}, FACEVALUE index: {}, COUPONFREQUENCY index: {}, COUPONLENGTH index: {}, COUPONDAYSPASSED index: {}", 
-                            secidIndex, couponValueIndex, matdateIndex, wapriceIndex, faceValueIndex, couponFrequencyIndex, couponLengthIndex, couponDaysPassedIndex);
+                        logger.info("Found headers at line 3. SECID index: {}, SHORTNAME index: {}, COUPONVALUE index: {}, MATDATE index: {}, WAPRICE index: {}, FACEVALUE index: {}, COUPONFREQUENCY index: {}, COUPONLENGTH index: {}, COUPONDAYSPASSED index: {}", 
+                            secidIndex, shortNameIndex, couponValueIndex, matdateIndex, wapriceIndex, faceValueIndex, couponFrequencyIndex, couponLengthIndex, couponDaysPassedIndex);
                         continue;
                     }
 
@@ -100,9 +102,10 @@ public class BondCsvParserService {
                     }
                     
                     try {
-                        int maxIndex = Math.max(secidIndex, Math.max(couponValueIndex, Math.max(matdateIndex, Math.max(wapriceIndex, Math.max(faceValueIndex, Math.max(couponFrequencyIndex, Math.max(couponLengthIndex, couponDaysPassedIndex)))))));
+                        int maxIndex = Math.max(secidIndex, Math.max(shortNameIndex, Math.max(couponValueIndex, Math.max(matdateIndex, Math.max(wapriceIndex, Math.max(faceValueIndex, Math.max(couponFrequencyIndex, Math.max(couponLengthIndex, couponDaysPassedIndex))))))));
                         if (line.length > maxIndex) {
                             String ticker = line[secidIndex] != null ? line[secidIndex].trim() : "";
+                            String shortName = shortNameIndex != -1 && line[shortNameIndex] != null ? line[shortNameIndex].trim() : "";
                             String couponValueStr = line[couponValueIndex] != null ? line[couponValueIndex].trim() : "";
                             String matdateStr = matdateIndex != -1 && line[matdateIndex] != null ? line[matdateIndex].trim() : "";
                             String wapriceStr = wapriceIndex != -1 && line[wapriceIndex] != null ? line[wapriceIndex].trim() : "";
@@ -111,7 +114,7 @@ public class BondCsvParserService {
                             String couponLengthStr = couponLengthIndex != -1 && line[couponLengthIndex] != null ? line[couponLengthIndex].trim() : "";
                             String couponDaysPassedStr = couponDaysPassedIndex != -1 && line[couponDaysPassedIndex] != null ? line[couponDaysPassedIndex].trim() : "";
                             
-                            if (!ticker.isEmpty() && !couponValueStr.isEmpty()) {
+                            if (!ticker.isEmpty() && !shortName.isEmpty() && !couponValueStr.isEmpty()) {
                                 BigDecimal couponValue = parseCouponValue(couponValueStr);
                                 LocalDate maturityDate = parseMaturityDate(matdateStr);
                                 BigDecimal waPrice = parseCouponValue(wapriceStr);
@@ -131,7 +134,7 @@ public class BondCsvParserService {
                                     BigDecimal costs = waPriceInRubles.add(nkd).add(fee);
                                     BigDecimal annualYield = calculateAnnualYield(netProfit, maturityDate, costs);
                                     
-                                    bondRepository.upsertBond(ticker, couponValue, maturityDate, waPrice, faceValue, couponFrequency, couponLength, nkd, fee, profit, netProfit, annualYield);
+                                    bondRepository.upsertBond(ticker, shortName, couponValue, maturityDate, waPrice, faceValue, couponFrequency, couponLength, nkd, fee, profit, netProfit, annualYield);
                                     processedCount++;
                                     
                                     if (processedCount % 100 == 0) {

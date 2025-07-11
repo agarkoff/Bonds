@@ -15,6 +15,7 @@ public class Bond {
     
     private Long id;
     private String ticker;
+    private String shortName;
     private BigDecimal couponValue;
     private LocalDate maturityDate;
     private BigDecimal waPrice;
