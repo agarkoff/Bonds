@@ -23,6 +23,7 @@ public class BondDisplayService {
         List<Bond> allBonds = bondRepository.findAll();
         
         return allBonds.stream()
+                .filter(this::isReasonableYield)
                 .map(this::convertToBondDisplayDto)
                 .sorted((b1, b2) -> b2.getAnnualYield().compareTo(b1.getAnnualYield()))
                 .limit(limit)
@@ -33,9 +34,22 @@ public class BondDisplayService {
         List<Bond> allBonds = bondRepository.findAll();
         
         return allBonds.stream()
+                .filter(this::isReasonableYield)
                 .map(this::convertToBondDisplayDto)
                 .sorted((b1, b2) -> b2.getAnnualYield().compareTo(b1.getAnnualYield()))
                 .collect(Collectors.toList());
+    }
+    
+    /**
+     * Фильтрует облигации с нереалистично высокой доходностью (выше 50%)
+     * @param bond облигация для проверки
+     * @return true если доходность разумная (до 50%)
+     */
+    private boolean isReasonableYield(Bond bond) {
+        if (bond.getAnnualYield() == null) {
+            return false;
+        }
+        return bond.getAnnualYield().compareTo(BigDecimal.valueOf(50)) <= 0;
     }
     
     private BondDisplayDto convertToBondDisplayDto(Bond bond) {
