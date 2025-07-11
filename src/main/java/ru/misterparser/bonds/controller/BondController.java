@@ -1,28 +1,26 @@
 package ru.misterparser.bonds.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.misterparser.bonds.entity.Bond;
 import ru.misterparser.bonds.repository.BondRepository;
-import ru.misterparser.bonds.service.BondCsvParserService;
+import ru.misterparser.bonds.service.BondProcessingFacadeService;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/bonds")
+@RequiredArgsConstructor
 public class BondController {
     
-    @Autowired
-    private BondCsvParserService csvParserService;
-    
-    @Autowired
-    private BondRepository bondRepository;
+    private final BondProcessingFacadeService bondProcessingFacadeService;
+    private final BondRepository bondRepository;
     
     @PostMapping("/parse")
     public ResponseEntity<ParseResponse> parseManually() {
         try {
-            int processedCount = csvParserService.parseAndSaveBonds();
+            int processedCount = bondProcessingFacadeService.parseAndCalculateBonds();
             return ResponseEntity.ok(new ParseResponse(
                 true, 
                 "Successfully parsed and saved " + processedCount + " bonds",
