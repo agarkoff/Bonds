@@ -17,10 +17,10 @@ public class BondCalculationService {
     private static final Logger logger = LoggerFactory.getLogger(BondCalculationService.class);
     
     @Value("${moex.fee}")
-    private final BigDecimal feePercent;
+    private BigDecimal feePercent;
     
     @Value("${moex.ndfl}")
-    private final BigDecimal ndflPercent;
+    private BigDecimal ndflPercent;
     
     public BigDecimal calculateNkd(Integer couponDaysPassed, BigDecimal couponValue, Integer couponLength) {
         try {

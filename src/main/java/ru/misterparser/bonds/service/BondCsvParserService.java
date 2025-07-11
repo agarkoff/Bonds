@@ -27,7 +27,7 @@ public class BondCsvParserService {
     private static final Logger logger = LoggerFactory.getLogger(BondCsvParserService.class);
     
     @Value("${moex.bonds-csv}")
-    private final String csvUrl;
+    private String csvUrl;
     
     public List<BondData> parseBondsFromCsv() {
         logger.info("Starting CSV parsing from URL: {}", csvUrl);
