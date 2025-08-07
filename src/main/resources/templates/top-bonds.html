@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Топ облигаций по доходности</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.2em;
+            font-weight: 300;
+        }
+        
+        .info {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            padding: 20px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        
+        th {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 12px 8px;
+            text-align: center;
+            font-weight: 600;
+            border: 1px solid #dee2e6;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        td {
+            padding: 10px 8px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+            white-space: nowrap;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        tr:hover {
+            background-color: #e3f2fd;
+        }
+        
+        .ticker {
+            font-weight: bold;
+            color: #1976d2;
+            min-width: 80px;
+        }
+        
+        .short-name {
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align: left;
+            padding-left: 12px;
+        }
+        
+        .rating {
+            font-weight: bold;
+            text-align: center;
+            min-width: 60px;
+            font-size: 11px;
+            border-radius: 4px;
+            padding: 4px 6px !important;
+        }
+        
+        .rating[title*="не присвоен"] {
+            color: #999;
+            font-style: italic;
+        }
+        
+        .group-header {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            font-weight: bold;
+            color: #1565c0;
+        }
+        
+        .costs-group { border-left: 4px solid #ff9800; }
+        .income-group { border-left: 4px solid #4caf50; }
+        .results-group { border-left: 4px solid #9c27b0; }
+        
+        .currency::after {
+            content: " ₽";
+            color: #666;
+        }
+        
+        .percentage::after {
+            content: "%";
+            color: #666;
+        }
+        
+        .yield-cell {
+            font-weight: bold;
+            border-radius: 4px;
+            padding: 8px !important;
+        }
+        
+        .controls {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+        }
+        
+        .form-group {
+            display: inline-block;
+            margin-right: 20px;
+        }
+        
+        label {
+            font-weight: 600;
+            margin-right: 10px;
+        }
+        
+        input, button {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        input[type="number"] {
+            width: 120px;
+        }
+        
+        input::placeholder {
+            color: #999;
+            font-style: italic;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .date {
+            color: #666;
+            font-size: 11px;
+        }
+        
+        .legend {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+            font-size: 12px;
+            text-align: center;
+        }
+        
+        .legend-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
+        
+        .legend-items {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 15px;
+            border-radius: 3px;
+            display: inline-block;
+        }
+        
+        .legend-text {
+            font-size: 11px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏆 Топ облигаций по доходности</h1>
+        </div>
+        
+        <div class="info">
+            <div>
+                <strong>Показано:</strong> <span th:text="${totalBonds}">0</span> облигаций
+            </div>
+            <div>
+                <strong>Обновлено:</strong> <span th:text="${#temporals.format(#temporals.createNow(), 'dd.MM.yyyy HH:mm')}"></span>
+            </div>
+        </div>
+        
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th rowspan="2">Тикер</th>
+                        <th rowspan="2">Название</th>
+                        <th rowspan="2">Рейтинг</th>
+                        <th rowspan="2">Размер купона</th>
+                        <th rowspan="2">Период</th>
+                        <th rowspan="2">Погашение</th>
+                        <th colspan="4" class="group-header costs-group">💰 Затраты</th>
+                        <th colspan="3" class="group-header income-group">📈 Доходы</th>
+                        <th rowspan="2" class="group-header results-group">💎 Чистая прибыль</th>
+                        <th rowspan="2" class="group-header results-group">🎯 Годовая доходность</th>
+                    </tr>
+                    <tr>
+                        <th class="costs-group">Цена</th>
+                        <th class="costs-group">НКД</th>
+                        <th class="costs-group">Комиссия</th>
+                        <th class="costs-group">Итого затраты</th>
+                        <th class="income-group">Номинал</th>
+                        <th class="income-group">Купон</th>
+                        <th class="income-group">Итого доход</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="bond : ${bonds}">
+                        <td class="ticker" th:text="${bond.ticker}">BOND</td>
+                        <td class="short-name" th:text="${bond.shortName}" th:title="${bond.shortName}">Название облигации</td>
+                        <td class="rating" th:text="${bond.ratingValue != null ? bond.ratingValue : '-'}" 
+                            th:title="${bond.ratingValue != null ? 'Кредитный рейтинг: ' + bond.ratingValue : 'Рейтинг не присвоен'}"
+                            th:style="${bond.ratingValue != null ? 
+                                (bond.ratingValue.startsWith('ruAAA') or bond.ratingValue.startsWith('ruAA') ? 'color: #2e7d32; background-color: #e8f5e8;' :
+                                 bond.ratingValue.startsWith('ruA') ? 'color: #388e3c; background-color: #f1f8e9;' :
+                                 bond.ratingValue.startsWith('ruBBB') ? 'color: #f57c00; background-color: #fff3e0;' :
+                                 bond.ratingValue.startsWith('ruBB') or bond.ratingValue.startsWith('ruB') ? 'color: #d32f2f; background-color: #ffebee;' :
+                                 'color: #424242; background-color: #f5f5f5;') : 
+                                'color: #999; font-style: italic;'}">-</td>
+                        <td class="currency" th:text="${bond.couponValue != null ? #numbers.formatDecimal(bond.couponValue, 0, 2) : '0.00'}">0.00</td>
+                        <td th:text="${bond.couponLength != null ? bond.couponLength + ' дн.' : '-'}" style="text-align: center; color: #666;">365 дн.</td>
+                        <td class="date" th:text="${bond.maturityDate != null ? #temporals.format(bond.maturityDate, 'dd.MM.yyyy') : '-'}">01.01.2025</td>
+                        
+                        <!-- Блок затрат -->
+                        <td class="currency costs-group" th:text="${bond.price != null ? #numbers.formatDecimal(bond.price, 0, 2) : '0.00'}">0.00</td>
+                        <td class="currency costs-group" th:text="${bond.nkd != null ? #numbers.formatDecimal(bond.nkd, 0, 2) : '0.00'}">0.00</td>
+                        <td class="currency costs-group" th:text="${bond.fee != null ? #numbers.formatDecimal(bond.fee, 0, 2) : '0.00'}">0.00</td>
+                        <td class="currency costs-group" th:text="${bond.costs != null ? #numbers.formatDecimal(bond.costs, 0, 2) : '0.00'}" style="font-weight: bold;">0.00</td>
+                        
+                        <!-- Блок доходов -->
+                        <td class="currency income-group" th:text="${bond.faceValue != null ? #numbers.formatDecimal(bond.faceValue, 0, 2) : '0.00'}">0.00</td>
+                        <td class="currency income-group" th:text="${bond.couponRedemption != null ? #numbers.formatDecimal(bond.couponRedemption, 0, 2) : '0.00'}">0.00</td>
+                        <td class="currency income-group" th:text="${bond.profit != null ? #numbers.formatDecimal(bond.profit, 0, 2) : '0.00'}" style="font-weight: bold;">0.00</td>
+                        
+                        <!-- Результаты -->
+                        <td class="currency results-group" th:text="${bond.profitNet != null ? #numbers.formatDecimal(bond.profitNet, 0, 2) : '0.00'}"
+                            th:style="'font-weight: bold; color: ' + (${bond.profitNet != null and bond.profitNet.compareTo(T(java.math.BigDecimal).ZERO) >= 0} ? '#4caf50' : '#f44336')">0.00</td>
+                        
+                        <!-- Годовая доходность с градиентом относительно ключевой ставки 18% -->
+                        <td class="yield-cell results-group" 
+                            th:text="${bond.annualYield != null ? #numbers.formatDecimal(bond.annualYield, 0, 2) + '%' : '0.00%'}"
+                            th:style="'background-color: ' + ${T(ru.misterparser.bonds.util.ColorUtils).getYieldColor(bond.annualYield)} + '; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.7);'"
+                            th:title="${bond.annualYield != null ? 'Доходность: ' + #numbers.formatDecimal(bond.annualYield, 0, 2) + '% (ключевая ставка 18%)' : 'Нет данных о доходности'}">
+                            0.00%
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-title">📊 Градиент доходности относительно ключевой ставки 18%</div>
+            <div class="legend-items">
+                <div class="legend-item">
+                    <span class="legend-color" style="background-color: #009900;"></span>
+                    <span class="legend-text">< 18%</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background-color: #00cc00;"></span>
+                    <span class="legend-text">≈ 18% (ключевая ставка)</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background-color: #cccc00;"></span>
+                    <span class="legend-text">18-24% (желтый)</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background-color: #ff6600;"></span>
+                    <span class="legend-text">24-30% (оранжевый)</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background-color: #ff0000;"></span>
+                    <span class="legend-text">30-36% (красный)</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background-color: #800020;"></span>
+                    <span class="legend-text">> 36% (бордовый)</span>
+                </div>
+            </div>
+            
+            <div class="legend-title" style="margin-top: 15px;">⭐ Цветовое кодирование рейтингов</div>
+            <div class="legend-items">
+                <div class="legend-item">
+                    <span class="legend-color" style="background-color: #e8f5e8; border: 1px solid #2e7d32;"></span>
+                    <span class="legend-text">ruAAA, ruAA (высший)</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background-color: #f1f8e9; border: 1px solid #388e3c;"></span>
+                    <span class="legend-text">ruA (высокий)</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background-color: #fff3e0; border: 1px solid #f57c00;"></span>
+                    <span class="legend-text">ruBBB (средний)</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background-color: #ffebee; border: 1px solid #d32f2f;"></span>
+                    <span class="legend-text">ruBB, ruB (спекулятивный)</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background-color: #f5f5f5; border: 1px solid #999;"></span>
+                    <span class="legend-text">Рейтинг не присвоен</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <form method="get" style="display: inline;">
+                <div class="form-group">
+                    <label for="limit">Количество облигаций:</label>
+                    <input type="number" id="limit" name="limit" th:value="${limit}" min="10" max="500" step="10">
+                </div>
+                <div class="form-group">
+                    <label for="weeksToMaturity">Недель до погашения:</label>
+                    <input type="number" id="weeksToMaturity" name="weeksToMaturity" th:value="${weeksToMaturity}" min="1" max="520" step="1" placeholder="Не ограничено">
+                </div>
+                <button type="submit">🔄 Обновить</button>
+            </form>
+            
+            <div style="float: right;">
+                <a href="/api/bonds" style="text-decoration: none;">
+                    <button type="button">📊 API данные</button>
+                </a>
+                <button type="button" onclick="window.location.reload()">♻️ Перезагрузить</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

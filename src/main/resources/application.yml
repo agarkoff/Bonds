@@ -1,0 +1,55 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:25432/bonds
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.sql
+  thymeleaf:
+    cache: false
+
+logging:
+  level:
+    ru.misterparser.bonds: DEBUG
+    root: INFO
+
+# Источники данных
+sources:
+  bonds:
+    moex:
+      enabled: true
+      source: url
+      csv-url: "https://iss.moex.com/iss/apps/infogrid/emission/rates.csv?columns=SECID,SHORTNAME,ISIN,FACEVALUE,FACEUNIT,ISSUESIZE,MATDATE,COUPONFREQUENCY,COUPONPERCENT,COUPONLENGTH,COUPONDAYSPASSED&iss.dp=comma&iss.df=%25d.%25m.%25Y&iss.tf=%25H:%25M:%25S&iss.dtf=%25d.%25m.%25Y%20%25H:%25M:%25S&iss.only=rates&limit=unlimited&lang=ru"
+      fallback-file: "docs/rates.csv"
+      cron: "0 0 11 * * MON-FRI"
+    tbank:
+      enabled: true
+      api-url: "https://invest-public-api.tinkoff.ru/rest"
+      token: "${TBANK_TOKEN:}"
+      rate-limit: 60
+      instruments:
+        cron: "0 0 2 * * *"
+      marketdata:
+        cron: "0 */15 9-18 * * MON-FRI"
+        mock-price-delta: 8
+  ratings:
+    raexpert:
+      enabled: true
+      cron: "0 0 2 * * SUN"
+      cache:
+        path: "cache/raexpert"
+        expires-days: 60
+      delays:
+        page-interval: 30
+        request-timeout: 30
+
+# Расчеты
+calc:
+  period-minutes: 30
+  broker:
+    fee: 0.05
+  ndfl: 13
+  precision: 8
+  min-days-to-maturity: 1
+  max-yield: 50
