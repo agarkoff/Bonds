@@ -182,6 +182,7 @@
                     <tr>
                         <th rowspan="2">Тикер</th>
                         <th rowspan="2">Название</th>
+                        <th rowspan="2">Рейтинг</th>
                         <th rowspan="2">Размер купона</th>
                         <th rowspan="2">Период</th>
                         <th rowspan="2">Погашение</th>
@@ -204,6 +205,9 @@
                     <tr th:each="bond : ${bonds}">
                         <td class="ticker" th:text="${bond.ticker}">BOND</td>
                         <td class="short-name" th:text="${bond.shortName}" th:title="${bond.shortName}">Название облигации</td>
+                        <td class="rating" th:text="${bond.ratingValue != null ? bond.ratingValue : '-'}" 
+                            th:title="${bond.ratingValue != null ? 'Кредитный рейтинг: ' + bond.ratingValue : 'Рейтинг не присвоен'}"
+                            style="font-weight: bold; text-align: center; min-width: 60px; font-size: 11px;">-</td>
                         <td class="currency" th:text="${#numbers.formatDecimal(bond.couponValue, 0, 2)}">0.00</td>
                         <td th:text="${bond.couponLength} + ' дн.'" style="text-align: center; color: #666;">365 дн.</td>
                         <td class="date" th:text="${#temporals.format(bond.maturityDate, 'dd.MM.yyyy')}">01.01.2025</td>
