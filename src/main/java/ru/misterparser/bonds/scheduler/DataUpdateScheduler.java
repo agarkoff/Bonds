@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import ru.misterparser.bonds.config.CalcConfig;
+import ru.misterparser.bonds.config.DohodConfig;
 import ru.misterparser.bonds.config.MoexConfig;
 import ru.misterparser.bonds.config.RaExpertConfig;
 import ru.misterparser.bonds.config.TBankConfig;
@@ -29,6 +30,9 @@ public class DataUpdateScheduler {
     private RaExpertService raExpertService;
 
     @Autowired
+    private DohodService dohodService;
+
+    @Autowired
     private CalculationService calculationService;
 
     @Autowired
@@ -39,6 +43,9 @@ public class DataUpdateScheduler {
 
     @Autowired
     private RaExpertConfig raExpertConfig;
+
+    @Autowired
+    private DohodConfig dohodConfig;
 
     @Autowired
     private CalcConfig calcConfig;
@@ -85,12 +92,25 @@ public class DataUpdateScheduler {
     @Scheduled(cron = "#{@raExpertConfig.cron}")
     public void updateRatings() {
         if (raExpertConfig.isEnabled()) {
-            logger.info("Starting scheduled ratings update");
+            logger.info("Starting scheduled RaExpert ratings update");
             try {
                 raExpertService.updateRatings();
-                logger.info("Scheduled ratings update completed");
+                logger.info("Scheduled RaExpert ratings update completed");
             } catch (Exception e) {
-                logger.error("Error during scheduled ratings update", e);
+                logger.error("Error during scheduled RaExpert ratings update", e);
+            }
+        }
+    }
+
+    @Scheduled(cron = "#{@dohodConfig.cron}")
+    public void updateDohodRatings() {
+        if (dohodConfig.isEnabled()) {
+            logger.info("Starting scheduled Dohod ratings update");
+            try {
+                dohodService.updateRatings();
+                logger.info("Scheduled Dohod ratings update completed");
+            } catch (Exception e) {
+                logger.error("Error during scheduled Dohod ratings update", e);
             }
         }
     }

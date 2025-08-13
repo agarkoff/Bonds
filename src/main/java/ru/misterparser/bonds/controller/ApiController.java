@@ -30,6 +30,9 @@ public class ApiController {
     private RaExpertService raExpertService;
 
     @Autowired
+    private DohodService dohodService;
+
+    @Autowired
     private CalculationService calculationService;
 
     @Autowired
@@ -82,15 +85,27 @@ public class ApiController {
         }
     }
 
-    @PostMapping("/ratings/update")
-    public ResponseEntity<String> updateRatings() {
-        logger.info("Manual ratings update triggered");
+    @PostMapping("/ratings/raexpert/update")
+    public ResponseEntity<String> updateRaExpertRatings() {
+        logger.info("Manual RaExpert ratings update triggered");
         try {
             raExpertService.updateRatings();
-            return ResponseEntity.ok("Ratings update completed successfully");
+            return ResponseEntity.ok("RaExpert ratings update completed successfully");
         } catch (Exception e) {
-            logger.error("Error during manual ratings update", e);
-            return ResponseEntity.status(500).body("Error during ratings update: " + e.getMessage());
+            logger.error("Error during manual RaExpert ratings update", e);
+            return ResponseEntity.status(500).body("Error during RaExpert ratings update: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/ratings/dohod/update")
+    public ResponseEntity<String> updateDohodRatings() {
+        logger.info("Manual Dohod ratings update triggered");
+        try {
+            dohodService.updateRatings();
+            return ResponseEntity.ok("Dohod ratings update completed successfully");
+        } catch (Exception e) {
+            logger.error("Error during manual Dohod ratings update", e);
+            return ResponseEntity.status(500).body("Error during Dohod ratings update: " + e.getMessage());
         }
     }
 
