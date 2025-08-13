@@ -159,6 +159,23 @@
             color: #666;
             font-size: 11px;
         }
+        
+        .offer-row {
+            background-color: #e8f5e8 !important;
+        }
+        
+        .offer-row:hover {
+            background-color: #d4edda !important;
+        }
+        
+        .offer-indicator {
+            background-color: #28a745;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            margin-left: 5px;
+        }
     </style>
 </head>
 <body>
@@ -171,7 +188,7 @@
         <div class="controls">
             <form method="get" style="display: inline;">
                 <div class="form-group">
-                    <label for="limit">Количество тикетов:</label>
+                    <label for="limit">Количество тикеров:</label>
                     <input type="number" id="limit" name="limit" th:value="${limit}" min="10" max="500" step="10">
                 </div>
                 <div class="form-group">
@@ -181,6 +198,12 @@
                 <div class="form-group">
                     <label for="maxWeeksToMaturity">до:</label>
                     <input type="number" id="maxWeeksToMaturity" name="maxWeeksToMaturity" th:value="${maxWeeksToMaturity}" min="0" max="520" step="1">
+                </div>
+                <div class="form-group">
+                    <label for="showOffer">
+                        <input type="checkbox" id="showOffer" name="showOffer" th:checked="${showOffer}">
+                        По оферте, если возможно
+                    </label>
                 </div>
                 <button type="submit">🔄 Обновить</button>
             </form>
@@ -228,15 +251,30 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr th:each="bond : ${bonds}">
+                    <tr th:each="bond : ${bonds}" 
+                        th:class="${showOffer and bond.offerDate != null and bond.annualYieldOffer != null} ? 'offer-row' : ''">
                         <td class="ticker" th:text="${bond.ticker}">BOND</td>
-                        <td class="short-name" th:text="${bond.shortName}" th:title="${bond.shortName}">Название облигации</td>
+                        <td class="short-name" th:title="${bond.shortName}">
+                            <span th:text="${bond.shortName}">Название облигации</span>
+                            <!-- Индикатор оферты -->
+                            <span th:if="${showOffer and bond.offerDate != null and bond.annualYieldOffer != null}" 
+                                  class="offer-indicator">ОФЕРТА</span>
+                        </td>
                         <td class="rating" th:text="${bond.ratingValue != null ? bond.ratingValue : '-'}" 
                             th:title="${bond.ratingValue != null ? 'Кредитный рейтинг: ' + bond.ratingValue : 'Рейтинг не присвоен'}"
                             style="font-weight: bold; text-align: center; min-width: 60px; font-size: 11px;">-</td>
                         <td class="currency" th:text="${#numbers.formatDecimal(bond.couponValue, 0, 2)}">0.00</td>
                         <td th:text="${bond.couponLength} + ' дн.'" style="text-align: center; color: #666;">365 дн.</td>
-                        <td class="date" th:text="${#temporals.format(bond.maturityDate, 'dd.MM.yyyy')}">01.01.2025</td>
+                        
+                        <!-- Дата погашения или дата оферты -->
+                        <td class="date">
+                            <span th:if="${showOffer and bond.offerDate != null and bond.annualYieldOffer != null}"
+                                  th:text="${#temporals.format(bond.offerDate, 'dd.MM.yyyy')}" 
+                                  th:title="'Дата оферты: ' + ${#temporals.format(bond.offerDate, 'dd.MM.yyyy')}">01.01.2025</span>
+                            <span th:unless="${showOffer and bond.offerDate != null and bond.annualYieldOffer != null}"
+                                  th:text="${#temporals.format(bond.maturityDate, 'dd.MM.yyyy')}"
+                                  th:title="'Дата погашения: ' + ${#temporals.format(bond.maturityDate, 'dd.MM.yyyy')}">01.01.2025</span>
+                        </td>
                         
                         <!-- Блок затрат -->
                         <td class="currency costs-group" th:text="${#numbers.formatDecimal(bond.price, 0, 2)}">0.00</td>
@@ -246,19 +284,50 @@
                         
                         <!-- Блок доходов -->
                         <td class="currency income-group" th:text="${#numbers.formatDecimal(bond.faceValue, 0, 2)}">0.00</td>
-                        <td class="currency income-group" th:text="${#numbers.formatDecimal(bond.couponRedemption, 0, 2)}">0.00</td>
-                        <td class="currency income-group" th:text="${#numbers.formatDecimal(bond.profit, 0, 2)}" style="font-weight: bold;">0.00</td>
                         
-                        <!-- Результаты -->
-                        <td class="currency results-group" th:text="${#numbers.formatDecimal(bond.profitNet, 0, 2)}"
-                            th:style="'font-weight: bold; color: ' + (${bond.profitNet} >= 0 ? '#4caf50' : '#f44336')">0.00</td>
-                        
-                        <!-- Годовая доходность с градиентом -->
-                        <td class="yield-cell results-group" 
-                            th:text="${#numbers.formatDecimal(bond.annualYield, 0, 2)} + '%'"
-                            th:style="'background-color: ' + ${T(ru.misterparser.bonds.util.ColorUtils).getYieldColor(bond.annualYield, minYield, maxYield)} + '; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.7);'">
-                            0.00%
+                        <!-- Купон: по оферте или до погашения -->
+                        <td class="currency income-group">
+                            <span th:if="${showOffer and bond.offerDate != null and bond.annualYieldOffer != null and bond.couponOffer != null}"
+                                  th:text="${#numbers.formatDecimal(bond.couponOffer, 0, 2)}"
+                                  th:title="'Купонные выплаты до даты оферты'">0.00</span>
+                            <span th:unless="${showOffer and bond.offerDate != null and bond.annualYieldOffer != null and bond.couponOffer != null}"
+                                  th:text="${#numbers.formatDecimal(bond.couponRedemption, 0, 2)}"
+                                  th:title="'Купонные выплаты до погашения'">0.00</span>
                         </td>
+                        
+                        <!-- Итого доход: по оферте или до погашения -->
+                        <td class="currency income-group" style="font-weight: bold;">
+                            <span th:if="${showOffer and bond.offerDate != null and bond.annualYieldOffer != null and bond.profitOffer != null}"
+                                  th:text="${#numbers.formatDecimal(bond.profitOffer, 0, 2)}"
+                                  th:title="'Общий доход при досрочном погашении по оферте'">0.00</span>
+                            <span th:unless="${showOffer and bond.offerDate != null and bond.annualYieldOffer != null and bond.profitOffer != null}"
+                                  th:text="${#numbers.formatDecimal(bond.profit, 0, 2)}"
+                                  th:title="'Общий доход при погашении'">0.00</span>
+                        </td>
+                        
+                        <!-- Чистая прибыль: по оферте или обычная -->
+                        <td class="currency results-group">
+                            <span th:if="${showOffer and bond.offerDate != null and bond.annualYieldOffer != null and bond.profitNetOffer != null}"
+                                  th:text="${#numbers.formatDecimal(bond.profitNetOffer, 0, 2)}"
+                                  th:style="'font-weight: bold; color: ' + (${bond.profitNetOffer} >= 0 ? '#4caf50' : '#f44336')"
+                                  th:title="'Чистая прибыль после налогов при досрочном погашении'">0.00</span>
+                            <span th:unless="${showOffer and bond.offerDate != null and bond.annualYieldOffer != null and bond.profitNetOffer != null}"
+                                  th:text="${#numbers.formatDecimal(bond.profitNet, 0, 2)}"
+                                  th:style="'font-weight: bold; color: ' + (${bond.profitNet} >= 0 ? '#4caf50' : '#f44336')"
+                                  th:title="'Чистая прибыль после налогов при погашении'">0.00</span>
+                        </td>
+                        
+                        <!-- Годовая доходность: по оферте или обычная -->
+                        <td class="yield-cell results-group"
+                            th:if="${showOffer and bond.offerDate != null and bond.annualYieldOffer != null}"
+                            th:text="${#numbers.formatDecimal(bond.annualYieldOffer, 0, 2)} + '%'"
+                            th:style="'background-color: ' + ${T(ru.misterparser.bonds.util.ColorUtils).getYieldColor(bond.annualYieldOffer, minYield, maxYield)} + '; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.7);'"
+                            th:title="'Годовая доходность при досрочном погашении по оферте'">0.00%</td>
+                        <td class="yield-cell results-group"
+                            th:unless="${showOffer and bond.offerDate != null and bond.annualYieldOffer != null}"
+                            th:text="${#numbers.formatDecimal(bond.annualYield, 0, 2)} + '%'"
+                            th:style="'background-color: ' + ${T(ru.misterparser.bonds.util.ColorUtils).getYieldColor(bond.annualYield, minYield, maxYield)} + '; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.7);'"
+                            th:title="'Годовая доходность при погашении'">0.00%</td>
                     </tr>
                 </tbody>
             </table>
