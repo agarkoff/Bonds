@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 
 @Service
@@ -32,7 +33,8 @@ public class MoexService {
 
     private static final Logger logger = LoggerFactory.getLogger(MoexService.class);
     private static final Charset CP1251 = Charset.forName("CP1251");
-    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+    private static final DateTimeFormatter DATE_FORMAT_1 = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+    private static final DateTimeFormatter DATE_FORMAT_2 = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     @Autowired
     private MoexConfig moexConfig;
@@ -217,6 +219,7 @@ public class MoexService {
             
             // Парсинг даты в формате dd.mm.yyyy
             bond.setMaturityDate(parseDate(getValue(row, columnIndexes, "MATDATE")));
+            bond.setOfferDate(parseDate(getValue(row, columnIndexes, "OFFERDATE")));
             
             return bond;
             
@@ -264,10 +267,14 @@ public class MoexService {
             return null;
         }
         try {
-            return LocalDate.parse(value, DATE_FORMAT);
-        } catch (Exception e) {
-            logger.debug("Failed to parse date: {}", value);
-            return null;
+            return LocalDate.parse(value, DATE_FORMAT_1);
+        } catch (DateTimeParseException e1) {
+            try {
+                return LocalDate.parse(value, DATE_FORMAT_2);
+            } catch (Exception e2) {
+                logger.debug("Failed to parse date: {}", value);
+                return null;
+            }
         }
     }
 }

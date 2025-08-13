@@ -31,6 +31,7 @@ public class BondRepository {
             bond.setCouponFrequency(rs.getInt("coupon_frequency"));
             bond.setCouponLength(rs.getInt("coupon_length"));
             bond.setCouponDaysPassed(rs.getInt("coupon_days_passed"));
+            bond.setOfferDate(rs.getDate("offer_date") != null ? rs.getDate("offer_date").toLocalDate() : null);
             bond.setFigi(rs.getString("figi"));
             bond.setInstrumentUid(rs.getString("instrument_uid"));
             bond.setAssetUid(rs.getString("asset_uid"));
@@ -89,9 +90,9 @@ public class BondRepository {
     public void save(Bond bond) {
         if (bond.getId() == null) {
             String sql = "INSERT INTO bonds (isin, ticker, short_name, coupon_value, maturity_date, face_value, " +
-                    "coupon_frequency, coupon_length, coupon_days_passed, figi, instrument_uid, asset_uid, brand_name, " +
+                    "coupon_frequency, coupon_length, coupon_days_passed, offer_date, figi, instrument_uid, asset_uid, brand_name, " +
                     "price, rating_value, rating_code, coupon_daily, nkd, costs, fee, coupon_redemption, " +
-                    "profit, profit_net, annual_yield) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    "profit, profit_net, annual_yield) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             
             jdbcTemplate.update(sql,
                     bond.getIsin(),
@@ -103,6 +104,7 @@ public class BondRepository {
                     bond.getCouponFrequency(),
                     bond.getCouponLength(),
                     bond.getCouponDaysPassed(),
+                    bond.getOfferDate(),
                     bond.getFigi(),
                     bond.getInstrumentUid(),
                     bond.getAssetUid(),
@@ -121,7 +123,7 @@ public class BondRepository {
             );
         } else {
             String sql = "UPDATE bonds SET ticker = ?, short_name = ?, coupon_value = ?, maturity_date = ?, face_value = ?, " +
-                    "coupon_frequency = ?, coupon_length = ?, coupon_days_passed = ?, figi = ?, instrument_uid = ?, " +
+                    "coupon_frequency = ?, coupon_length = ?, coupon_days_passed = ?, offer_date = ?, figi = ?, instrument_uid = ?, " +
                     "asset_uid = ?, brand_name = ?, price = ?, rating_value = ?, rating_code = ?, coupon_daily = ?, " +
                     "nkd = ?, costs = ?, fee = ?, coupon_redemption = ?, profit = ?, profit_net = ?, " +
                     "annual_yield = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
@@ -135,6 +137,7 @@ public class BondRepository {
                     bond.getCouponFrequency(),
                     bond.getCouponLength(),
                     bond.getCouponDaysPassed(),
+                    bond.getOfferDate(),
                     bond.getFigi(),
                     bond.getInstrumentUid(),
                     bond.getAssetUid(),
@@ -174,7 +177,7 @@ public class BondRepository {
 
     private void updateMoexFields(Bond bond) {
         String sql = "UPDATE bonds SET ticker = ?, short_name = ?, coupon_value = ?, maturity_date = ?, " +
-                "face_value = ?, coupon_frequency = ?, coupon_length = ?, coupon_days_passed = ?, " +
+                "face_value = ?, coupon_frequency = ?, coupon_length = ?, coupon_days_passed = ?, offer_date = ?, " +
                 "updated_at = CURRENT_TIMESTAMP WHERE isin = ?";
         
         jdbcTemplate.update(sql,
@@ -186,6 +189,7 @@ public class BondRepository {
                 bond.getCouponFrequency(),
                 bond.getCouponLength(),
                 bond.getCouponDaysPassed(),
+                bond.getOfferDate(),
                 bond.getIsin()
         );
     }

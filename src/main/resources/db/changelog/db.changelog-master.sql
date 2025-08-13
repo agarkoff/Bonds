@@ -60,3 +60,6 @@ CREATE TABLE ratings (
 CREATE INDEX idx_ratings_isin ON ratings(isin);
 CREATE INDEX idx_ratings_date ON ratings(rating_date DESC);
 CREATE UNIQUE INDEX idx_ratings_unique ON ratings(isin, rating_date);
+
+--changeset bonds:3
+ALTER TABLE bonds ADD COLUMN offer_date DATE;

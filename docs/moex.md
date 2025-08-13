@@ -30,6 +30,7 @@
 | COUPONFREQUENCY  | Количество купонов в год        | coupon_frequency   | ✗            |
 | COUPONLENGTH     | Длительность купонного периода  | coupon_length      | ✗            |
 | COUPONDAYSPASSED | Дней прошло с последнего купона | coupon_days_passed | ✗            |
+| OFFERDATE        | Дата оферты                     | offer_date         | ✗            |
 
 ## API
 

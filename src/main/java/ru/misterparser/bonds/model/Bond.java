@@ -15,6 +15,7 @@ public class Bond {
     private Integer couponFrequency;
     private Integer couponLength;
     private Integer couponDaysPassed;
+    private LocalDate offerDate;
     
     // T-Bank данные
     private String figi;
@@ -263,5 +264,13 @@ public class Bond {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public LocalDate getOfferDate() {
+        return offerDate;
+    }
+
+    public void setOfferDate(LocalDate offerDate) {
+        this.offerDate = offerDate;
     }
 }
