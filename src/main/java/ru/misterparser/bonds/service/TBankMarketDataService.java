@@ -133,7 +133,11 @@ public class TBankMarketDataService {
                     
                     return absolutePrice;
                 }
+            } else {
+                logger.info("Стакан для покупки пуст для ISIN: {}", bond.getIsin());
             }
+        } else {
+            logger.info("Неожиданный код ответа от T-Bank: {}", response.getStatusCode());
         }
 
         return null;
