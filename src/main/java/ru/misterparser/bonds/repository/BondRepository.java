@@ -163,6 +163,33 @@ public class BondRepository {
         save(bond);
     }
 
+    public void saveOrUpdateMoexData(Bond bond) {
+        Optional<Bond> existing = findByIsin(bond.getIsin());
+        if (existing.isPresent()) {
+            updateMoexFields(bond);
+        } else {
+            save(bond);
+        }
+    }
+
+    private void updateMoexFields(Bond bond) {
+        String sql = "UPDATE bonds SET ticker = ?, short_name = ?, coupon_value = ?, maturity_date = ?, " +
+                "face_value = ?, coupon_frequency = ?, coupon_length = ?, coupon_days_passed = ?, " +
+                "updated_at = CURRENT_TIMESTAMP WHERE isin = ?";
+        
+        jdbcTemplate.update(sql,
+                bond.getTicker(),
+                bond.getShortName(),
+                bond.getCouponValue(),
+                bond.getMaturityDate(),
+                bond.getFaceValue(),
+                bond.getCouponFrequency(),
+                bond.getCouponLength(),
+                bond.getCouponDaysPassed(),
+                bond.getIsin()
+        );
+    }
+
     public void updatePrice(String isin, java.math.BigDecimal price) {
         jdbcTemplate.update("UPDATE bonds SET price = ?, updated_at = CURRENT_TIMESTAMP WHERE isin = ?", 
                 price, isin);

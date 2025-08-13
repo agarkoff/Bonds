@@ -136,7 +136,7 @@ public class MoexService {
             try {
                 Bond bond = parseRow(row, columnIndexes);
                 if (bond != null && bond.getIsin() != null) {
-                    bondRepository.saveOrUpdate(bond);
+                    bondRepository.saveOrUpdateMoexData(bond);
                     successful++;
                     logger.debug("Processed bond: {}", bond.getIsin());
                 } else {
