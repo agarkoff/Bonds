@@ -57,14 +57,14 @@ public class BondRepository {
     }
 
     public List<Bond> findTopByAnnualYield(int limit) {
-        return jdbcTemplate.query("SELECT * FROM bonds WHERE annual_yield IS NOT NULL AND annual_yield <= 50 ORDER BY annual_yield DESC LIMIT ?", 
+        return jdbcTemplate.query("SELECT * FROM bonds WHERE annual_yield IS NOT NULL AND annual_yield <= 50 ORDER BY FLOOR(annual_yield) DESC, rating_code ASC, annual_yield DESC LIMIT ?",
                 bondRowMapper, limit);
     }
 
     public List<Bond> findTopByAnnualYieldAndMaturity(int limit, int weeksToMaturity) {
         String sql = "SELECT * FROM bonds WHERE annual_yield IS NOT NULL AND annual_yield <= 50 " +
                      "AND maturity_date IS NOT NULL AND maturity_date <= (CURRENT_DATE + INTERVAL '" + weeksToMaturity + " weeks') " +
-                     "ORDER BY annual_yield DESC LIMIT ?";
+                     "ORDER BY FLOOR(annual_yield) DESC, rating_code ASC, annual_yield DESC LIMIT ?";
         return jdbcTemplate.query(sql, bondRowMapper, limit);
     }
 
