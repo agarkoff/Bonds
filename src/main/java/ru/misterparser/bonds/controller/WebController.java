@@ -22,22 +22,21 @@ public class WebController {
 
     @GetMapping("/top.html")
     public String topBonds(@RequestParam(defaultValue = "50") int limit,
-                          @RequestParam(required = false) Integer weeksToMaturity,
+                          @RequestParam(defaultValue = "0") int minWeeksToMaturity,
+                          @RequestParam(defaultValue = "26") int maxWeeksToMaturity,
                           Model model) {
         try {
-            logger.info("Loading top bonds page with limit: {} and weeksToMaturity: {}", limit, weeksToMaturity);
+            logger.info("Loading top bonds page with limit: {}, minWeeks: {}, maxWeeks: {}", 
+                       limit, minWeeksToMaturity, maxWeeksToMaturity);
             
-            List<Bond> bonds;
-            if (weeksToMaturity != null) {
-                bonds = bondRepository.findTopByAnnualYieldAndMaturity(limit, weeksToMaturity);
-            } else {
-                bonds = bondRepository.findTopByAnnualYield(limit);
-            }
+            List<Bond> bonds = bondRepository.findTopByAnnualYieldAndMaturityRange(
+                limit, minWeeksToMaturity, maxWeeksToMaturity);
             
             model.addAttribute("bonds", bonds);
             model.addAttribute("totalBonds", bonds.size());
             model.addAttribute("limit", limit);
-            model.addAttribute("weeksToMaturity", weeksToMaturity);
+            model.addAttribute("minWeeksToMaturity", minWeeksToMaturity);
+            model.addAttribute("maxWeeksToMaturity", maxWeeksToMaturity);
             
             return "top-bonds";
             

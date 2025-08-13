@@ -68,6 +68,15 @@ public class BondRepository {
         return jdbcTemplate.query(sql, bondRowMapper, limit);
     }
 
+    public List<Bond> findTopByAnnualYieldAndMaturityRange(int limit, int minWeeksToMaturity, int maxWeeksToMaturity) {
+        String sql = "SELECT * FROM bonds WHERE annual_yield IS NOT NULL AND annual_yield <= 50 " +
+                     "AND maturity_date IS NOT NULL " +
+                     "AND maturity_date >= (CURRENT_DATE + INTERVAL '" + minWeeksToMaturity + " weeks') " +
+                     "AND maturity_date <= (CURRENT_DATE + INTERVAL '" + maxWeeksToMaturity + " weeks') " +
+                     "ORDER BY FLOOR(annual_yield) DESC, rating_code ASC, annual_yield DESC LIMIT ?";
+        return jdbcTemplate.query(sql, bondRowMapper, limit);
+    }
+
     public Optional<Bond> findByIsin(String isin) {
         List<Bond> bonds = jdbcTemplate.query("SELECT * FROM bonds WHERE isin = ?", bondRowMapper, isin);
         return bonds.isEmpty() ? Optional.empty() : Optional.of(bonds.get(0));
