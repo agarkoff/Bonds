@@ -240,6 +240,10 @@
                     <label for="limit">Количество облигаций:</label>
                     <input type="number" id="limit" name="limit" th:value="${limit}" min="10" max="500" step="10">
                 </div>
+                <div class="form-group">
+                    <label for="weeksToMaturity">Недель до погашения:</label>
+                    <input type="number" id="weeksToMaturity" name="weeksToMaturity" th:value="${weeksToMaturity}" min="1" max="520" placeholder="все">
+                </div>
                 <button type="submit">🔄 Обновить</button>
             </form>
             
