@@ -47,6 +47,10 @@ public class BondRepository {
             bond.setProfit(rs.getBigDecimal("profit"));
             bond.setProfitNet(rs.getBigDecimal("profit_net"));
             bond.setAnnualYield(rs.getBigDecimal("annual_yield"));
+            bond.setCouponOffer(rs.getBigDecimal("coupon_offer"));
+            bond.setProfitOffer(rs.getBigDecimal("profit_offer"));
+            bond.setProfitNetOffer(rs.getBigDecimal("profit_net_offer"));
+            bond.setAnnualYieldOffer(rs.getBigDecimal("annual_yield_offer"));
             bond.setCreatedAt(rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toLocalDateTime() : null);
             bond.setUpdatedAt(rs.getTimestamp("updated_at") != null ? rs.getTimestamp("updated_at").toLocalDateTime() : null);
             return bond;
@@ -92,7 +96,8 @@ public class BondRepository {
             String sql = "INSERT INTO bonds (isin, ticker, short_name, coupon_value, maturity_date, face_value, " +
                     "coupon_frequency, coupon_length, coupon_days_passed, offer_date, figi, instrument_uid, asset_uid, brand_name, " +
                     "price, rating_value, rating_code, coupon_daily, nkd, costs, fee, coupon_redemption, " +
-                    "profit, profit_net, annual_yield) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    "profit, profit_net, annual_yield, coupon_offer, profit_offer, profit_net_offer, annual_yield_offer) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             
             jdbcTemplate.update(sql,
                     bond.getIsin(),
@@ -119,14 +124,19 @@ public class BondRepository {
                     bond.getCouponRedemption(),
                     bond.getProfit(),
                     bond.getProfitNet(),
-                    bond.getAnnualYield()
+                    bond.getAnnualYield(),
+                    bond.getCouponOffer(),
+                    bond.getProfitOffer(),
+                    bond.getProfitNetOffer(),
+                    bond.getAnnualYieldOffer()
             );
         } else {
             String sql = "UPDATE bonds SET ticker = ?, short_name = ?, coupon_value = ?, maturity_date = ?, face_value = ?, " +
                     "coupon_frequency = ?, coupon_length = ?, coupon_days_passed = ?, offer_date = ?, figi = ?, instrument_uid = ?, " +
                     "asset_uid = ?, brand_name = ?, price = ?, rating_value = ?, rating_code = ?, coupon_daily = ?, " +
                     "nkd = ?, costs = ?, fee = ?, coupon_redemption = ?, profit = ?, profit_net = ?, " +
-                    "annual_yield = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+                    "annual_yield = ?, coupon_offer = ?, profit_offer = ?, profit_net_offer = ?, annual_yield_offer = ?, " +
+                    "updated_at = CURRENT_TIMESTAMP WHERE id = ?";
             
             jdbcTemplate.update(sql,
                     bond.getTicker(),
@@ -153,6 +163,10 @@ public class BondRepository {
                     bond.getProfit(),
                     bond.getProfitNet(),
                     bond.getAnnualYield(),
+                    bond.getCouponOffer(),
+                    bond.getProfitOffer(),
+                    bond.getProfitNetOffer(),
+                    bond.getAnnualYieldOffer(),
                     bond.getId()
             );
         }
@@ -228,6 +242,7 @@ public class BondRepository {
     private void updateCalculationFields(Bond bond) {
         String sql = "UPDATE bonds SET coupon_daily = ?, nkd = ?, costs = ?, fee = ?, " +
                 "coupon_redemption = ?, profit = ?, profit_net = ?, annual_yield = ?, " +
+                "coupon_offer = ?, profit_offer = ?, profit_net_offer = ?, annual_yield_offer = ?, " +
                 "updated_at = CURRENT_TIMESTAMP WHERE isin = ?";
         
         jdbcTemplate.update(sql,
@@ -239,6 +254,10 @@ public class BondRepository {
                 bond.getProfit(),
                 bond.getProfitNet(),
                 bond.getAnnualYield(),
+                bond.getCouponOffer(),
+                bond.getProfitOffer(),
+                bond.getProfitNetOffer(),
+                bond.getAnnualYieldOffer(),
                 bond.getIsin()
         );
     }

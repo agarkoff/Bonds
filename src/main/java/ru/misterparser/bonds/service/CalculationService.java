@@ -149,7 +149,61 @@ public class CalculationService {
         
         bond.setAnnualYield(annualYield);
 
+        // 9. Расчёт по дате оферты (если присутствует)
+        calculateOfferMetrics(bond, mathContext, now, costs, couponDaily, nkd, taxRate);
+
         logger.debug("Bond {} calculated: yield={}%, profit={}, costs={}", 
                 bond.getIsin(), annualYield, profitNet, costs);
+    }
+
+    private void calculateOfferMetrics(Bond bond, MathContext mathContext, LocalDate now, 
+                                      BigDecimal costs, BigDecimal couponDaily, BigDecimal nkd, BigDecimal taxRate) {
+        // Проверяем наличие даты оферты
+        if (bond.getOfferDate() == null || !bond.getOfferDate().isAfter(now)) {
+            // Сбрасываем значения, если оферта не актуальна
+            bond.setCouponOffer(null);
+            bond.setProfitOffer(null);
+            bond.setProfitNetOffer(null);
+            bond.setAnnualYieldOffer(null);
+            return;
+        }
+
+        try {
+            long daysToOffer = ChronoUnit.DAYS.between(now, bond.getOfferDate());
+            
+            // 1. Купоны до оферты
+            BigDecimal couponOffer = new BigDecimal(daysToOffer - 1)
+                    .multiply(couponDaily, mathContext)
+                    .add(nkd);
+            bond.setCouponOffer(couponOffer);
+
+            // 2. Доход до оферты (при досрочном погашении по номиналу)
+            BigDecimal profitOffer = bond.getFaceValue().add(couponOffer).subtract(costs);
+            bond.setProfitOffer(profitOffer);
+
+            // 3. Чистая прибыль до оферты (после налогов)
+            BigDecimal profitNetOffer = profitOffer.multiply(BigDecimal.ONE.subtract(taxRate), mathContext);
+            bond.setProfitNetOffer(profitNetOffer);
+
+            // 4. Годовая доходность до оферты
+            BigDecimal annualYieldOffer = profitNetOffer
+                    .divide(costs, mathContext)
+                    .multiply(DAYS_IN_YEAR, mathContext)
+                    .divide(new BigDecimal(daysToOffer), mathContext)
+                    .multiply(HUNDRED, mathContext);
+            
+            bond.setAnnualYieldOffer(annualYieldOffer);
+
+            logger.debug("Bond {} offer metrics calculated: offer_yield={}%, offer_profit={}, days_to_offer={}", 
+                    bond.getIsin(), annualYieldOffer, profitNetOffer, daysToOffer);
+
+        } catch (Exception e) {
+            logger.debug("Error calculating offer metrics for bond {}: {}", bond.getIsin(), e.getMessage());
+            // При ошибке сбрасываем значения
+            bond.setCouponOffer(null);
+            bond.setProfitOffer(null);
+            bond.setProfitNetOffer(null);
+            bond.setAnnualYieldOffer(null);
+        }
     }
 }

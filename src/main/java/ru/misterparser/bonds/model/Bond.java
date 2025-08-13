@@ -40,6 +40,12 @@ public class Bond {
     private BigDecimal profitNet;
     private BigDecimal annualYield;
     
+    // Расчетные показатели по дате оферты
+    private BigDecimal couponOffer;
+    private BigDecimal profitOffer;
+    private BigDecimal profitNetOffer;
+    private BigDecimal annualYieldOffer;
+    
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -272,5 +278,37 @@ public class Bond {
 
     public void setOfferDate(LocalDate offerDate) {
         this.offerDate = offerDate;
+    }
+
+    public BigDecimal getCouponOffer() {
+        return couponOffer;
+    }
+
+    public void setCouponOffer(BigDecimal couponOffer) {
+        this.couponOffer = couponOffer;
+    }
+
+    public BigDecimal getProfitOffer() {
+        return profitOffer;
+    }
+
+    public void setProfitOffer(BigDecimal profitOffer) {
+        this.profitOffer = profitOffer;
+    }
+
+    public BigDecimal getProfitNetOffer() {
+        return profitNetOffer;
+    }
+
+    public void setProfitNetOffer(BigDecimal profitNetOffer) {
+        this.profitNetOffer = profitNetOffer;
+    }
+
+    public BigDecimal getAnnualYieldOffer() {
+        return annualYieldOffer;
+    }
+
+    public void setAnnualYieldOffer(BigDecimal annualYieldOffer) {
+        this.annualYieldOffer = annualYieldOffer;
     }
 }

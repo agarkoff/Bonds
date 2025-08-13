@@ -63,3 +63,9 @@ CREATE UNIQUE INDEX idx_ratings_unique ON ratings(isin, rating_date);
 
 --changeset bonds:3
 ALTER TABLE bonds ADD COLUMN offer_date DATE;
+
+--changeset bonds:4
+ALTER TABLE bonds ADD COLUMN coupon_offer DECIMAL(15,8);
+ALTER TABLE bonds ADD COLUMN profit_offer DECIMAL(15,8);
+ALTER TABLE bonds ADD COLUMN profit_net_offer DECIMAL(15,8);
+ALTER TABLE bonds ADD COLUMN annual_yield_offer DECIMAL(8,4);
