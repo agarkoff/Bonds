@@ -190,6 +190,55 @@ public class BondRepository {
         );
     }
 
+    public void saveOrUpdateTBankData(Bond bond) {
+        Optional<Bond> existing = findByIsin(bond.getIsin());
+        if (existing.isPresent()) {
+            updateTBankFields(bond);
+        } else {
+            save(bond);
+        }
+    }
+
+    private void updateTBankFields(Bond bond) {
+        String sql = "UPDATE bonds SET figi = ?, instrument_uid = ?, asset_uid = ?, brand_name = ?, " +
+                "updated_at = CURRENT_TIMESTAMP WHERE isin = ?";
+        
+        jdbcTemplate.update(sql,
+                bond.getFigi(),
+                bond.getInstrumentUid(),
+                bond.getAssetUid(),
+                bond.getBrandName(),
+                bond.getIsin()
+        );
+    }
+
+    public void saveOrUpdateCalculationData(Bond bond) {
+        Optional<Bond> existing = findByIsin(bond.getIsin());
+        if (existing.isPresent()) {
+            updateCalculationFields(bond);
+        } else {
+            save(bond);
+        }
+    }
+
+    private void updateCalculationFields(Bond bond) {
+        String sql = "UPDATE bonds SET coupon_daily = ?, nkd = ?, costs = ?, fee = ?, " +
+                "coupon_redemption = ?, profit = ?, profit_net = ?, annual_yield = ?, " +
+                "updated_at = CURRENT_TIMESTAMP WHERE isin = ?";
+        
+        jdbcTemplate.update(sql,
+                bond.getCouponDaily(),
+                bond.getNkd(),
+                bond.getCosts(),
+                bond.getFee(),
+                bond.getCouponRedemption(),
+                bond.getProfit(),
+                bond.getProfitNet(),
+                bond.getAnnualYield(),
+                bond.getIsin()
+        );
+    }
+
     public void updatePrice(String isin, java.math.BigDecimal price) {
         jdbcTemplate.update("UPDATE bonds SET price = ?, updated_at = CURRENT_TIMESTAMP WHERE isin = ?", 
                 price, isin);

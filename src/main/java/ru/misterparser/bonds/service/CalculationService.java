@@ -45,7 +45,7 @@ public class CalculationService {
                 try {
                     if (canCalculate(bond)) {
                         calculateBond(bond);
-                        bondRepository.save(bond);
+                        bondRepository.saveOrUpdateCalculationData(bond);
                         calculated++;
                         logger.debug("Calculated bond: {}", bond.getIsin());
                     } else {
@@ -75,7 +75,7 @@ public class CalculationService {
                 Bond bond = optionalBond.get();
                 if (canCalculate(bond)) {
                     calculateBond(bond);
-                    bondRepository.save(bond);
+                    bondRepository.saveOrUpdateCalculationData(bond);
                     logger.info("Calculation completed for bond: {}", isin);
                 } else {
                     logger.warn("Cannot calculate bond {} - missing required data", isin);

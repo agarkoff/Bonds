@@ -180,7 +180,7 @@ public class TBankInstrumentsService {
                             }
                         }
                         
-                        bondRepository.saveOrUpdate(bond);
+                        bondRepository.saveOrUpdateTBankData(bond);
                         updated++;
                         
                         logger.debug("Updated bond: {} (FIGI: {})", ticker, figi);
