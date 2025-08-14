@@ -74,11 +74,52 @@ public class BondRepository {
     }
 
     public List<Bond> findTopByAnnualYieldAndMaturityRange(int limit, int minWeeksToMaturity, int maxWeeksToMaturity) {
-        String sql = "SELECT * FROM bonds WHERE annual_yield IS NOT NULL AND annual_yield <= 50 " +
-                     "AND maturity_date IS NOT NULL " +
-                     "AND maturity_date >= (CURRENT_DATE + INTERVAL '" + minWeeksToMaturity + " weeks') " +
-                     "AND maturity_date <= (CURRENT_DATE + INTERVAL '" + maxWeeksToMaturity + " weeks') " +
-                     "ORDER BY FLOOR(annual_yield) DESC, rating_code ASC, annual_yield DESC LIMIT ?";
+        return findTopByAnnualYieldAndMaturityRange(limit, minWeeksToMaturity, maxWeeksToMaturity, false);
+    }
+
+    public List<Bond> findTopByAnnualYieldAndMaturityRange(int limit, int minWeeksToMaturity, int maxWeeksToMaturity, boolean useOfferYield) {
+        if (!useOfferYield) {
+            // Обычный режим - сортировка по annual_yield
+            String sql = "SELECT * FROM bonds WHERE annual_yield IS NOT NULL AND annual_yield <= 50 " +
+                         "AND maturity_date IS NOT NULL " +
+                         "AND maturity_date >= (CURRENT_DATE + INTERVAL '" + minWeeksToMaturity + " weeks') " +
+                         "AND maturity_date <= (CURRENT_DATE + INTERVAL '" + maxWeeksToMaturity + " weeks') " +
+                         "ORDER BY FLOOR(annual_yield) DESC, rating_code ASC, annual_yield DESC LIMIT ?";
+            return jdbcTemplate.query(sql, bondRowMapper, limit);
+        }
+        
+        // Режим оферты: используем annual_yield_offer если доступно, иначе annual_yield
+        String sql = "SELECT * " +
+                     "FROM bonds " +
+                     "WHERE " +
+                     "  (annual_yield IS NOT NULL OR annual_yield_offer IS NOT NULL) " +
+                     "  AND maturity_date IS NOT NULL " +
+                     "  AND CASE " +
+                     "    WHEN offer_date IS NOT NULL AND offer_date > CURRENT_DATE AND annual_yield_offer IS NOT NULL " +
+                     "    THEN annual_yield_offer <= 50 " +
+                     "    ELSE annual_yield <= 50 " +
+                     "  END " +
+                     "  AND CASE " +
+                     "    WHEN offer_date IS NOT NULL AND offer_date > CURRENT_DATE AND annual_yield_offer IS NOT NULL " +
+                     "    THEN offer_date >= (CURRENT_DATE + INTERVAL '" + minWeeksToMaturity + " weeks') " +
+                     "         AND offer_date <= (CURRENT_DATE + INTERVAL '" + maxWeeksToMaturity + " weeks') " +
+                     "    ELSE maturity_date >= (CURRENT_DATE + INTERVAL '" + minWeeksToMaturity + " weeks') " +
+                     "         AND maturity_date <= (CURRENT_DATE + INTERVAL '" + maxWeeksToMaturity + " weeks') " +
+                     "  END " +
+                     "ORDER BY " +
+                     "  FLOOR(CASE " +
+                     "    WHEN offer_date IS NOT NULL AND offer_date > CURRENT_DATE AND annual_yield_offer IS NOT NULL " +
+                     "    THEN annual_yield_offer " +
+                     "    ELSE annual_yield " +
+                     "  END) DESC, " +
+                     "  rating_code ASC, " +
+                     "  CASE " +
+                     "    WHEN offer_date IS NOT NULL AND offer_date > CURRENT_DATE AND annual_yield_offer IS NOT NULL " +
+                     "    THEN annual_yield_offer " +
+                     "    ELSE annual_yield " +
+                     "  END DESC " +
+                     "LIMIT ?";
+        
         return jdbcTemplate.query(sql, bondRowMapper, limit);
     }
 

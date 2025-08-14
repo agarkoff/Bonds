@@ -31,7 +31,7 @@ public class WebController {
                        limit, minWeeksToMaturity, maxWeeksToMaturity, showOffer);
             
             List<Bond> bonds = bondRepository.findTopByAnnualYieldAndMaturityRange(
-                limit, minWeeksToMaturity, maxWeeksToMaturity);
+                limit, minWeeksToMaturity, maxWeeksToMaturity, showOffer);
             
             model.addAttribute("bonds", bonds);
             model.addAttribute("totalBonds", bonds.size());
