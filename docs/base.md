@@ -35,7 +35,7 @@
 
 ### Платформа
 - **Java 11+**
-- **Spring Boot 2.7** с модулями: Web, JDBC, Scheduling
+- **Spring Boot 2.7** с модулями: Web, JDBC, Scheduling, Lombok
 - **Maven** для сборки проекта
 - **PostgreSQL** для хранения данных
 - **Liquibase** для управления схемой БД (SQL формат)
