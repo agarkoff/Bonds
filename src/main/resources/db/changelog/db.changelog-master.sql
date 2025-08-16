@@ -69,3 +69,19 @@ ALTER TABLE bonds ADD COLUMN coupon_offer DECIMAL(15,8);
 ALTER TABLE bonds ADD COLUMN profit_offer DECIMAL(15,8);
 ALTER TABLE bonds ADD COLUMN profit_net_offer DECIMAL(15,8);
 ALTER TABLE bonds ADD COLUMN annual_yield_offer DECIMAL(8,4);
+
+--changeset bonds:5
+CREATE TABLE offer_subscription (
+    id SERIAL PRIMARY KEY,
+    chat_id BIGINT NOT NULL,
+    username VARCHAR(255),
+    isin VARCHAR(12) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_offer_subscription_bond FOREIGN KEY (isin) REFERENCES bonds(isin),
+    CONSTRAINT unique_subscription UNIQUE(chat_id, isin)
+);
+
+CREATE INDEX idx_offer_subscription_chat_id ON offer_subscription(chat_id);
+CREATE INDEX idx_offer_subscription_isin ON offer_subscription(isin);

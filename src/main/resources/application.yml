@@ -53,3 +53,9 @@ calc:
   precision: 8
   min-days-to-maturity: 1
   max-yield: 50
+
+# Telegram Bot
+telegram:
+  bot:
+    token: ${BOT_TOKEN:}
+    username: ${BOT_USERNAME:BondsOfferBot}
