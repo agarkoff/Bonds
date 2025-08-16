@@ -22,10 +22,6 @@ COPY drivers/linux/chromedriver drivers/linux/chromedriver
 # Создаем директории для кэша и документации
 RUN mkdir -p cache/raexpert docs
 
-# Копируем статические файлы (если есть)
-COPY docs/ docs/
-COPY cache/ cache/
-
 # Открываем порт приложения
 EXPOSE 8080
 
