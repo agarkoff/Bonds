@@ -470,6 +470,18 @@
             }
         });
         
+        // Добавляем обработчик для чекбокса оферты
+        const showOfferCheckbox = document.getElementById('showOffer');
+        showOfferCheckbox.addEventListener('change', function() {
+            // Сохраняем позицию курсора если поле поиска в фокусе
+            if (document.activeElement === searchInput) {
+                saveCursorPosition();
+            }
+            
+            // Отправляем форму
+            form.submit();
+        });
+        
         // Скрываем индикатор загрузки и восстанавливаем фокус после загрузки страницы
         window.addEventListener('load', function() {
             searchLoading.style.display = 'none';
