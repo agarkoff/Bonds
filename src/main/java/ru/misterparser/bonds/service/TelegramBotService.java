@@ -18,6 +18,7 @@ import ru.misterparser.bonds.repository.OfferSubscriptionRepository;
 
 import javax.annotation.PostConstruct;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -100,6 +101,9 @@ public class TelegramBotService extends TelegramLongPollingBot {
             case "/clear":
                 handleClearCommand(chatId);
                 break;
+            case "/offers":
+                handleOffersCommand(chatId);
+                break;
             default:
                 if (command.toLowerCase().startsWith("/remove ")) {
                     String isin = command.substring(8).trim().toUpperCase();
@@ -121,6 +125,7 @@ public class TelegramBotService extends TelegramLongPollingBot {
             "*Команды:*\n" +
             "/help - справка по командам\n" +
             "/list - список ваших подписок\n" +
+            "/offers - ваши ближайшие оферты (менее 2 недель)\n" +
             "/clear - удалить все подписки\n" +
             "/remove ISIN - удалить конкретную облигацию\n\n" +
             "📝 *Чтобы добавить облигацию, просто отправьте её ISIN код*";
@@ -135,6 +140,7 @@ public class TelegramBotService extends TelegramLongPollingBot {
             "/start - начать работу с ботом\n" +
             "/help - показать эту справку\n" +
             "/list - показать ваши подписки\n" +
+            "/offers - ваши ближайшие оферты (менее 2 недель)\n" +
             "/clear - удалить все подписки\n" +
             "/remove ISIN - удалить облигацию из отслеживания\n\n" +
             "*Добавление облигаций:*\n" +
@@ -259,6 +265,74 @@ public class TelegramBotService extends TelegramLongPollingBot {
         response.append("\n📊 Всего в отслеживании: ").append(subscriptionCount).append(" облигаций");
 
         sendMessage(chatId, response.toString());
+    }
+
+    private void handleOffersCommand(Long chatId) {
+        try {
+            // Получаем подписки пользователя с приближающимися офертами
+            List<OfferSubscription> subscriptions = subscriptionRepository.findSubscriptionsWithOffersInDays(14);
+            
+            // Фильтруем только для текущего пользователя
+            List<Bond> userBonds = new ArrayList<>();
+            for (OfferSubscription subscription : subscriptions) {
+                if (subscription.getChatId().equals(chatId)) {
+                    Optional<Bond> bondOpt = bondRepository.findByIsin(subscription.getIsin());
+                    if (bondOpt.isPresent()) {
+                        userBonds.add(bondOpt.get());
+                    }
+                }
+            }
+            
+            if (userBonds.isEmpty()) {
+                // Проверяем, есть ли у пользователя подписки вообще
+                List<OfferSubscription> allUserSubscriptions = subscriptionRepository.findByUserChatId(chatId);
+                if (allUserSubscriptions.isEmpty()) {
+                    sendMessage(chatId, "📅 *Ближайшие оферты*\n\n" +
+                                      "У вас нет отслеживаемых облигаций.\n\n" +
+                                      "📝 Отправьте ISIN код облигации, чтобы добавить её в отслеживание.");
+                } else {
+                    sendMessage(chatId, "📅 *Ближайшие оферты*\n\n" +
+                                      "Среди ваших отслеживаемых облигаций в ближайшие 2 недели оферт не запланировано.\n\n" +
+                                      "💡 Используйте /list для просмотра всех ваших подписок.");
+                }
+                return;
+            }
+
+            StringBuilder message = new StringBuilder();
+            message.append("📅 *Ваши ближайшие оферты* (").append(userBonds.size()).append("):\n\n");
+            message.append("Оферты по вашим облигациям в ближайшие 2 недели:\n\n");
+
+            for (Bond bond : userBonds) {
+                message.append("🔸 ").append(bond.getIsin());
+                if (bond.getTicker() != null) {
+                    message.append(" (").append(bond.getTicker()).append(")");
+                }
+                message.append("\n");
+                
+                if (bond.getShortName() != null) {
+                    message.append("   ").append(bond.getShortName()).append("\n");
+                }
+                
+                if (bond.getOfferDate() != null) {
+                    message.append("   📅 ").append(bond.getOfferDate().format(DATE_FORMATTER));
+                    
+                    // Показываем доходность оферты, если есть
+                    if (bond.getAnnualYieldOffer() != null) {
+                        message.append(" | 📈 ").append(String.format("%.2f", bond.getAnnualYieldOffer())).append("%");
+                    }
+                    message.append("\n");
+                }
+                message.append("\n");
+            }
+
+            message.append("⚠️ *Важно:* Не забудьте принять решение по оферте до указанной даты!\n\n");
+            message.append("💡 Для управления подписками используйте /list, /remove или /clear");
+            sendMessage(chatId, message.toString());
+            
+        } catch (Exception e) {
+            logger.error("Ошибка при получении списка ближайших оферт", e);
+            sendMessage(chatId, "❌ Произошла ошибка при получении списка оферт. Попробуйте позже.");
+        }
     }
 
     /**

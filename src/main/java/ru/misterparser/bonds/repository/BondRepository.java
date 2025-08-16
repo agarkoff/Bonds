@@ -317,4 +317,13 @@ public class BondRepository {
     public long count() {
         return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM bonds", Long.class);
     }
+
+    public List<Bond> findBondsWithOffersInDays(int days) {
+        String sql = "SELECT * FROM bonds " +
+                    "WHERE offer_date IS NOT NULL " +
+                    "AND offer_date > CURRENT_DATE " +
+                    "AND offer_date <= CURRENT_DATE + INTERVAL '" + days + " days' " +
+                    "ORDER BY offer_date ASC";
+        return jdbcTemplate.query(sql, bondRowMapper);
+    }
 }
