@@ -13,7 +13,7 @@
         }
         
         .container {
-            max-width: 1400px;
+            max-width: 1600px;
             margin: 0 auto;
             background: white;
             border-radius: 8px;
@@ -127,19 +127,40 @@
         }
         
         .form-group {
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            white-space: nowrap;
             margin-right: 20px;
         }
         
-        label {
+        .form-group label {
+            margin-right: 8px;
+            font-size: 14px;
             font-weight: 600;
-            margin-right: 10px;
+        }
+        
+        .form-group input[type="number"] {
+            width: 70px;
+        }
+        
+        .form-group input[type="text"] {
+            width: 200px;
+        }
+        
+        .form-group input[type="checkbox"] {
+            margin-right: 5px;
+        }
+        
+        .controls form {
+            display: inline-block;
+            width: 100%;
         }
         
         input, button {
             padding: 8px 12px;
             border: 1px solid #ddd;
             border-radius: 4px;
+            font-size: 13px;
         }
         
         button {
@@ -148,6 +169,8 @@
             border: none;
             cursor: pointer;
             font-weight: 600;
+            padding: 10px 20px;
+            white-space: nowrap;
         }
         
         button:hover {
@@ -222,7 +245,7 @@
                     <input type="number" id="maxWeeksToMaturity" name="maxWeeksToMaturity" th:value="${maxWeeksToMaturity}" min="0" max="520" step="1">
                 </div>
                 <div class="form-group">
-                    <label for="searchText">Поиск по тикеру/названию:</label>
+                    <label for="searchText">Тикер/название:</label>
                     <div class="search-container">
                         <input type="text" id="searchText" name="searchText" th:value="${searchText}" placeholder="Введите тикер или название">
                         <span id="searchLoading" class="search-loading" style="display: none;"></span>
