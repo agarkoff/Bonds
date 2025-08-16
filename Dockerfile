@@ -1,4 +1,20 @@
-# Используем официальный образ OpenJDK 11
+# Этап 1: Сборка приложения
+FROM maven:3.8.6-openjdk-11 AS build
+
+# Создаем рабочую директорию для сборки
+WORKDIR /build
+
+# Копируем файлы Maven для кэширования зависимостей
+COPY pom.xml .
+RUN mvn dependency:go-offline
+
+# Копируем исходный код
+COPY src ./src
+
+# Собираем приложение
+RUN mvn clean package -DskipTests
+
+# Этап 2: Рабочий образ
 FROM openjdk:11-jre-slim
 
 # Устанавливаем Chromium браузер и сетевые утилиты
@@ -13,8 +29,8 @@ WORKDIR /app
 # Устанавливаем переменные окружения
 ENV SPRING_PROFILES_ACTIVE=docker
 
-# Копируем JAR файл приложения
-COPY target/bonds-0.0.1-SNAPSHOT.jar app.jar
+# Копируем JAR файл из этапа сборки
+COPY --from=build /build/target/bonds-0.0.1-SNAPSHOT.jar app.jar
 
 # Копируем chromedriver
 COPY drivers/linux/chromedriver drivers/linux/chromedriver
