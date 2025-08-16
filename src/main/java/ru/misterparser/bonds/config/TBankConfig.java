@@ -3,7 +3,7 @@ package ru.misterparser.bonds.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
-@Configuration
+@Configuration("tBankConfig")
 @ConfigurationProperties(prefix = "sources.bonds.tbank")
 public class TBankConfig {
     private boolean enabled = true;
