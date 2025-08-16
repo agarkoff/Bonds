@@ -156,6 +156,144 @@ public class CalculationService {
                 bond.getIsin(), annualYield, profitNet, costs);
     }
 
+    /**
+     * Пересчитывает финансовые показатели облигации с кастомной комиссией
+     */
+    public Bond calculateBondWithCustomFee(Bond bond, BigDecimal customFeePercent) {
+        if (!canCalculate(bond)) {
+            return bond;
+        }
+
+        // Создаем копию облигации для пересчёта
+        Bond calculatedBond = createBondCopy(bond);
+        
+        MathContext mathContext = new MathContext(calcConfig.getPrecision(), RoundingMode.HALF_UP);
+        LocalDate now = LocalDate.now();
+
+        // 1. Дневной купон (не зависит от комиссии)
+        BigDecimal couponDaily = calculatedBond.getCouponValue()
+                .divide(new BigDecimal(calculatedBond.getCouponLength()), mathContext);
+        calculatedBond.setCouponDaily(couponDaily);
+
+        // 2. НКД (не зависит от комиссии)
+        BigDecimal nkd = couponDaily
+                .multiply(new BigDecimal(calculatedBond.getCouponDaysPassed() + 1), mathContext);
+        calculatedBond.setNkd(nkd);
+
+        // 3. Кастомная комиссия
+        BigDecimal preFeeCosts = calculatedBond.getPrice().add(nkd);
+        BigDecimal fee = preFeeCosts
+                .multiply(customFeePercent, mathContext)
+                .divide(HUNDRED, mathContext);
+        calculatedBond.setFee(fee);
+
+        // 4. Затраты с кастомной комиссией
+        BigDecimal costs = preFeeCosts.add(fee);
+        calculatedBond.setCosts(costs);
+
+        // 5. Купоны до погашения (не зависят от комиссии)
+        long daysToMaturity = ChronoUnit.DAYS.between(now, calculatedBond.getMaturityDate());
+        BigDecimal couponRedemption = new BigDecimal(daysToMaturity - 1)
+                .multiply(couponDaily, mathContext)
+                .add(nkd);
+        calculatedBond.setCouponRedemption(couponRedemption);
+
+        // 6. Доход с учётом кастомной комиссии
+        BigDecimal profit = calculatedBond.getFaceValue().add(couponRedemption).subtract(costs);
+        calculatedBond.setProfit(profit);
+
+        // 7. Чистая прибыль с учётом кастомной комиссии
+        BigDecimal taxRate = calcConfig.getNdfl().divide(HUNDRED, mathContext);
+        BigDecimal profitNet = profit.multiply(BigDecimal.ONE.subtract(taxRate), mathContext);
+        calculatedBond.setProfitNet(profitNet);
+
+        // 8. Годовая доходность с учётом кастомной комиссии
+        BigDecimal annualYield = profitNet
+                .divide(costs, mathContext)
+                .multiply(DAYS_IN_YEAR, mathContext)
+                .divide(new BigDecimal(daysToMaturity), mathContext)
+                .multiply(HUNDRED, mathContext);
+        calculatedBond.setAnnualYield(annualYield);
+
+        // 9. Расчёт по дате оферты с кастомной комиссией
+        calculateOfferMetricsWithCustomFee(calculatedBond, mathContext, now, costs, couponDaily, nkd, taxRate);
+
+        return calculatedBond;
+    }
+
+    private void calculateOfferMetricsWithCustomFee(Bond bond, MathContext mathContext, LocalDate now, 
+                                                   BigDecimal costs, BigDecimal couponDaily, BigDecimal nkd, BigDecimal taxRate) {
+        // Проверяем наличие даты оферты
+        if (bond.getOfferDate() == null || !bond.getOfferDate().isAfter(now)) {
+            // Сбрасываем значения, если оферта не актуальна
+            bond.setCouponOffer(null);
+            bond.setProfitOffer(null);
+            bond.setProfitNetOffer(null);
+            bond.setAnnualYieldOffer(null);
+            return;
+        }
+
+        try {
+            long daysToOffer = ChronoUnit.DAYS.between(now, bond.getOfferDate());
+            
+            // 1. Купоны до оферты
+            BigDecimal couponOffer = new BigDecimal(daysToOffer - 1)
+                    .multiply(couponDaily, mathContext)
+                    .add(nkd);
+            bond.setCouponOffer(couponOffer);
+
+            // 2. Доход до оферты с учётом кастомной комиссии
+            BigDecimal profitOffer = bond.getFaceValue().add(couponOffer).subtract(costs);
+            bond.setProfitOffer(profitOffer);
+
+            // 3. Чистая прибыль до оферты с учётом кастомной комиссии
+            BigDecimal profitNetOffer = profitOffer.multiply(BigDecimal.ONE.subtract(taxRate), mathContext);
+            bond.setProfitNetOffer(profitNetOffer);
+
+            // 4. Годовая доходность до оферты с учётом кастомной комиссии
+            BigDecimal annualYieldOffer = profitNetOffer
+                    .divide(costs, mathContext)
+                    .multiply(DAYS_IN_YEAR, mathContext)
+                    .divide(new BigDecimal(daysToOffer), mathContext)
+                    .multiply(HUNDRED, mathContext);
+            
+            bond.setAnnualYieldOffer(annualYieldOffer);
+
+        } catch (Exception e) {
+            logger.debug("Error calculating offer metrics with custom fee for bond {}: {}", bond.getIsin(), e.getMessage());
+            // При ошибке сбрасываем значения
+            bond.setCouponOffer(null);
+            bond.setProfitOffer(null);
+            bond.setProfitNetOffer(null);
+            bond.setAnnualYieldOffer(null);
+        }
+    }
+
+    private Bond createBondCopy(Bond original) {
+        Bond copy = new Bond();
+        copy.setId(original.getId());
+        copy.setIsin(original.getIsin());
+        copy.setTicker(original.getTicker());
+        copy.setShortName(original.getShortName());
+        copy.setCouponValue(original.getCouponValue());
+        copy.setMaturityDate(original.getMaturityDate());
+        copy.setFaceValue(original.getFaceValue());
+        copy.setCouponFrequency(original.getCouponFrequency());
+        copy.setCouponLength(original.getCouponLength());
+        copy.setCouponDaysPassed(original.getCouponDaysPassed());
+        copy.setOfferDate(original.getOfferDate());
+        copy.setFigi(original.getFigi());
+        copy.setInstrumentUid(original.getInstrumentUid());
+        copy.setAssetUid(original.getAssetUid());
+        copy.setBrandName(original.getBrandName());
+        copy.setPrice(original.getPrice());
+        copy.setRatingValue(original.getRatingValue());
+        copy.setRatingCode(original.getRatingCode());
+        copy.setCreatedAt(original.getCreatedAt());
+        copy.setUpdatedAt(original.getUpdatedAt());
+        return copy;
+    }
+
     private void calculateOfferMetrics(Bond bond, MathContext mathContext, LocalDate now, 
                                       BigDecimal costs, BigDecimal couponDaily, BigDecimal nkd, BigDecimal taxRate) {
         // Проверяем наличие даты оферты
