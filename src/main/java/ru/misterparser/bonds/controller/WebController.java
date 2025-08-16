@@ -25,13 +25,14 @@ public class WebController {
                           @RequestParam(defaultValue = "0") int minWeeksToMaturity,
                           @RequestParam(defaultValue = "26") int maxWeeksToMaturity,
                           @RequestParam(defaultValue = "false") boolean showOffer,
+                          @RequestParam(defaultValue = "") String searchText,
                           Model model) {
         try {
-            logger.info("Loading top bonds page with limit: {}, minWeeks: {}, maxWeeks: {}, showOffer: {}", 
-                       limit, minWeeksToMaturity, maxWeeksToMaturity, showOffer);
+            logger.info("Loading top bonds page with limit: {}, minWeeks: {}, maxWeeks: {}, showOffer: {}, searchText: '{}'", 
+                       limit, minWeeksToMaturity, maxWeeksToMaturity, showOffer, searchText);
             
-            List<Bond> bonds = bondRepository.findTopByAnnualYieldAndMaturityRange(
-                limit, minWeeksToMaturity, maxWeeksToMaturity, showOffer);
+            List<Bond> bonds = bondRepository.findTopByAnnualYieldAndMaturityRangeWithSearch(
+                limit, minWeeksToMaturity, maxWeeksToMaturity, showOffer, searchText);
             
             model.addAttribute("bonds", bonds);
             model.addAttribute("totalBonds", bonds.size());
@@ -39,6 +40,7 @@ public class WebController {
             model.addAttribute("minWeeksToMaturity", minWeeksToMaturity);
             model.addAttribute("maxWeeksToMaturity", maxWeeksToMaturity);
             model.addAttribute("showOffer", showOffer);
+            model.addAttribute("searchText", searchText);
             
             return "top-bonds";
             

@@ -176,6 +176,28 @@
             font-size: 10px;
             margin-left: 5px;
         }
+        
+        .search-loading {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 2s linear infinite;
+            display: inline-block;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .search-container {
+            position: relative;
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
@@ -198,6 +220,13 @@
                 <div class="form-group">
                     <label for="maxWeeksToMaturity">до:</label>
                     <input type="number" id="maxWeeksToMaturity" name="maxWeeksToMaturity" th:value="${maxWeeksToMaturity}" min="0" max="520" step="1">
+                </div>
+                <div class="form-group">
+                    <label for="searchText">Поиск по тикеру/названию:</label>
+                    <div class="search-container">
+                        <input type="text" id="searchText" name="searchText" th:value="${searchText}" placeholder="Введите тикер или название">
+                        <span id="searchLoading" class="search-loading" style="display: none;"></span>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="showOffer">
@@ -341,5 +370,93 @@
             </div>
         </div>
     </div>
+
+    <script>
+        let searchTimeout;
+        const searchInput = document.getElementById('searchText');
+        const searchLoading = document.getElementById('searchLoading');
+        const form = searchInput.closest('form');
+        
+        function saveCursorPosition() {
+            // Сохраняем позицию курсора и информацию о фокусе
+            if (document.activeElement === searchInput) {
+                sessionStorage.setItem('searchCursorPosition', searchInput.selectionStart);
+                sessionStorage.setItem('searchHadFocus', 'true');
+            }
+        }
+        
+        function restoreCursorPosition() {
+            // Восстанавливаем фокус и позицию курсора
+            const hadFocus = sessionStorage.getItem('searchHadFocus');
+            const cursorPosition = sessionStorage.getItem('searchCursorPosition');
+            
+            if (hadFocus === 'true') {
+                searchInput.focus();
+                if (cursorPosition !== null) {
+                    const pos = parseInt(cursorPosition);
+                    searchInput.setSelectionRange(pos, pos);
+                }
+                // Очищаем сохраненные данные
+                sessionStorage.removeItem('searchHadFocus');
+                sessionStorage.removeItem('searchCursorPosition');
+            }
+        }
+        
+        function performSearch() {
+            const searchValue = searchInput.value.trim();
+            
+            // Сохраняем позицию курсора перед перезагрузкой
+            saveCursorPosition();
+            
+            // Показываем индикатор загрузки
+            searchLoading.style.display = 'inline-block';
+            
+            // Получаем текущие значения всех фильтров
+            const formData = new FormData(form);
+            const params = new URLSearchParams();
+            
+            for (let [key, value] of formData.entries()) {
+                params.append(key, value);
+            }
+            
+            // Обновляем параметр поиска
+            params.set('searchText', searchValue);
+            
+            // Перезагружаем страницу с новыми параметрами
+            window.location.href = window.location.pathname + '?' + params.toString();
+        }
+        
+        function debounceSearch() {
+            clearTimeout(searchTimeout);
+            const searchValue = searchInput.value.trim();
+            
+            // Если меньше 3 символов и поле не пустое, не выполняем поиск
+            if (searchValue.length > 0 && searchValue.length < 3) {
+                return;
+            }
+            
+            // Если поле пустое или введено 3+ символов, выполняем поиск с задержкой
+            searchTimeout = setTimeout(performSearch, 500);
+        }
+        
+        // Добавляем обработчик события input
+        searchInput.addEventListener('input', debounceSearch);
+        
+        // Добавляем обработчик для Enter
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                clearTimeout(searchTimeout);
+                performSearch();
+            }
+        });
+        
+        // Скрываем индикатор загрузки и восстанавливаем фокус после загрузки страницы
+        window.addEventListener('load', function() {
+            searchLoading.style.display = 'none';
+            // Восстанавливаем фокус и позицию курсора после небольшой задержки
+            setTimeout(restoreCursorPosition, 100);
+        });
+    </script>
 </body>
 </html>
