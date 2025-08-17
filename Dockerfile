@@ -17,23 +17,29 @@ RUN mvn clean package -DskipTests
 # Этап 2: Рабочий образ
 FROM openjdk:11-jre-slim
 
-# Устанавливаем Chromium браузер и сетевые утилиты
+# Устанавливаем Chromium браузер, ChromeDriver и сетевые утилиты
 RUN apt-get update && \
-    apt-get install -y chromium iputils-ping net-tools curl wget telnet dnsutils && \
+    apt-get install -y chromium chromium-driver iputils-ping net-tools curl wget telnet dnsutils && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 # Создаем рабочую директорию
 WORKDIR /app
 
+# Создаем символическую ссылку для совместимости с путями в коде
+RUN mkdir -p drivers/linux && \
+    ln -s /usr/bin/chromedriver drivers/linux/chromedriver
+
 # Устанавливаем переменные окружения
 ENV SPRING_PROFILES_ACTIVE=docker
+ENV DISPLAY=:99
+ENV CHROME_BIN=/usr/bin/chromium
+ENV CHROME_DRIVER=/usr/bin/chromedriver
 
 # Копируем JAR файл из этапа сборки
 COPY --from=build /build/target/bonds-0.0.1-SNAPSHOT.jar app.jar
 
-# Копируем chromedriver
-COPY drivers/linux/chromedriver drivers/linux/chromedriver
+# ChromeDriver уже установлен из пакетного менеджера
 
 # Создаем директории для кэша и документации
 RUN mkdir -p cache/raexpert docs
