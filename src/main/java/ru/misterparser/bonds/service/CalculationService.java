@@ -215,14 +215,14 @@ public class CalculationService {
                 .multiply(HUNDRED, mathContext);
         calculatedBond.setAnnualYield(annualYield);
 
-        // 9. Расчёт по дате оферты с кастомной комиссией
-        calculateOfferMetricsWithCustomFee(calculatedBond, mathContext, now, costs, couponDaily, nkd, taxRate);
+        // 9. Расчёт по дате оферты с кастомной комиссией (двойная комиссия)
+        calculateOfferMetricsWithCustomFee(calculatedBond, mathContext, now, costs, couponDaily, nkd, taxRate, customFeePercent);
 
         return calculatedBond;
     }
 
     private void calculateOfferMetricsWithCustomFee(Bond bond, MathContext mathContext, LocalDate now, 
-                                                   BigDecimal costs, BigDecimal couponDaily, BigDecimal nkd, BigDecimal taxRate) {
+                                                   BigDecimal costs, BigDecimal couponDaily, BigDecimal nkd, BigDecimal taxRate, BigDecimal customFeePercent) {
         // Проверяем наличие даты оферты
         if (bond.getOfferDate() == null || !bond.getOfferDate().isAfter(now)) {
             // Сбрасываем значения, если оферта не актуальна
@@ -242,17 +242,28 @@ public class CalculationService {
                     .add(nkd);
             bond.setCouponOffer(couponOffer);
 
-            // 2. Доход до оферты с учётом кастомной комиссии
-            BigDecimal profitOffer = bond.getFaceValue().add(couponOffer).subtract(costs);
+            // 2. Расчёт затрат с двойной комиссией для оферты
+            BigDecimal preFeeCosts = bond.getPrice().add(nkd);
+            BigDecimal doubleFee = preFeeCosts
+                    .multiply(customFeePercent.multiply(new BigDecimal("2"), mathContext), mathContext)
+                    .divide(HUNDRED, mathContext);
+            BigDecimal offerCosts = preFeeCosts.add(doubleFee);
+            
+            // Обновляем поля fee и costs для отображения двойной комиссии в режиме оферты
+            bond.setFee(doubleFee);
+            bond.setCosts(offerCosts);
+
+            // 3. Доход до оферты с учётом двойной комиссии
+            BigDecimal profitOffer = bond.getFaceValue().add(couponOffer).subtract(offerCosts);
             bond.setProfitOffer(profitOffer);
 
-            // 3. Чистая прибыль до оферты с учётом кастомной комиссии
+            // 4. Чистая прибыль до оферты с учётом двойной комиссии
             BigDecimal profitNetOffer = profitOffer.multiply(BigDecimal.ONE.subtract(taxRate), mathContext);
             bond.setProfitNetOffer(profitNetOffer);
 
-            // 4. Годовая доходность до оферты с учётом кастомной комиссии
+            // 5. Годовая доходность до оферты с учётом двойной комиссии
             BigDecimal annualYieldOffer = profitNetOffer
-                    .divide(costs, mathContext)
+                    .divide(offerCosts, mathContext)
                     .multiply(DAYS_IN_YEAR, mathContext)
                     .divide(new BigDecimal(daysToOffer), mathContext)
                     .multiply(HUNDRED, mathContext);

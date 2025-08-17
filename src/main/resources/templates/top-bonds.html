@@ -200,6 +200,22 @@
             margin-left: 5px;
         }
         
+        .tooltip-icon {
+            color: #6c757d;
+            font-size: 12px;
+            margin-left: 4px;
+            cursor: help;
+            border-radius: 50%;
+            padding: 1px 3px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+        }
+        
+        .tooltip-icon:hover {
+            background-color: #667eea;
+            color: white;
+        }
+        
         .search-loading {
             border: 2px solid #f3f3f3;
             border-top: 2px solid #667eea;
@@ -299,7 +315,10 @@
                     <tr>
                         <th class="costs-group">Цена</th>
                         <th class="costs-group">НКД</th>
-                        <th class="costs-group">Комиссия</th>
+                        <th class="costs-group">
+                            Комиссия 
+                            <span class="tooltip-icon" title="Для оферт комиссия рассчитывается в двойном размере">ⓘ</span>
+                        </th>
                         <th class="costs-group">Итого затраты</th>
                         <th class="income-group">Номинал</th>
                         <th class="income-group">Купон</th>
@@ -335,7 +354,12 @@
                         <!-- Блок затрат -->
                         <td class="currency costs-group" th:text="${#numbers.formatDecimal(bond.price, 0, 2)}">0.00</td>
                         <td class="currency costs-group" th:text="${#numbers.formatDecimal(bond.nkd, 0, 2)}">0.00</td>
-                        <td class="currency costs-group" th:text="${#numbers.formatDecimal(bond.fee, 0, 2)}">0.00</td>
+                        <td class="currency costs-group">
+                            <span th:text="${#numbers.formatDecimal(bond.fee, 0, 2)}">0.00</span>
+                            <span th:if="${showOffer and bond.offerDate != null and bond.offerDate.isAfter(T(java.time.LocalDate).now())}" 
+                                  class="tooltip-icon" 
+                                  title="Для оферт комиссия учтена в двойном размере">ⓘ</span>
+                        </td>
                         <td class="currency costs-group" th:text="${#numbers.formatDecimal(bond.costs, 0, 2)}" style="font-weight: bold;">0.00</td>
                         
                         <!-- Блок доходов -->
