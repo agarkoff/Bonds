@@ -1,8 +1,20 @@
 package ru.misterparser.bonds.util;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import ru.misterparser.bonds.service.RatingColorService;
+
 import java.math.BigDecimal;
 
+@Component
 public class ColorUtils {
+    
+    private static RatingColorService ratingColorService;
+    
+    @Autowired
+    public void setRatingColorService(RatingColorService ratingColorService) {
+        ColorUtils.ratingColorService = ratingColorService;
+    }
     
     private static final BigDecimal KEY_RATE = new BigDecimal("18"); // Ключевая ставка 18%
     private static final BigDecimal DOUBLE_KEY_RATE = new BigDecimal("36"); // Двукратное превышение ключевой ставки
@@ -62,5 +74,34 @@ public class ColorUtils {
     // Для обратной совместимости - оставляем старый метод
     public static String getYieldColor(BigDecimal yield, BigDecimal minYield, BigDecimal maxYield) {
         return getYieldColor(yield);
+    }
+    
+    /**
+     * Возвращает цвет для рейтинга облигации
+     * Градиент от красного (рискованные) до зелёного (надёжные)
+     * Основан на национальной шкале рейтингов согласно ratings.md
+     * Цвета загружаются из файла rating-gradient.js
+     * 
+     * @param ratingCode числовой код рейтинга (чем меньше код, тем лучше рейтинг)
+     * @return цвет в формате hex
+     */
+    public static String getRatingColor(Integer ratingCode) {
+        if (ratingColorService != null) {
+            return ratingColorService.getRatingColor(ratingCode);
+        }
+        
+        // Fallback на случай если сервис не инициализирован
+        if (ratingCode == null) {
+            return "#6c757d"; // Серый для отсутствующего рейтинга
+        }
+        
+        // Простой fallback градиент
+        if (ratingCode <= 54) {
+            return "#00CC00"; // Зелёный для хороших рейтингов
+        } else if (ratingCode <= 154) {
+            return "#CCCC00"; // Жёлтый для средних рейтингов
+        } else {
+            return "#CC0000"; // Красный для плохих рейтингов
+        }
     }
 }
