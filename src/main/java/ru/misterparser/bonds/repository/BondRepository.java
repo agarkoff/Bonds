@@ -38,7 +38,8 @@ public class BondRepository {
             bond.setBrandName(rs.getString("brand_name"));
             bond.setPrice(rs.getBigDecimal("price"));
             bond.setRatingValue(rs.getString("rating_value"));
-            bond.setRatingCode(rs.getInt("rating_code"));
+            Integer ratingCode = rs.getObject("rating_code", Integer.class);
+            bond.setRatingCode(ratingCode);
             bond.setCouponDaily(rs.getBigDecimal("coupon_daily"));
             bond.setNkd(rs.getBigDecimal("nkd"));
             bond.setCosts(rs.getBigDecimal("costs"));

@@ -24,7 +24,8 @@ public class RatingRepository {
             rating.setIsin(rs.getString("isin"));
             rating.setCompanyName(rs.getString("company_name"));
             rating.setRatingValue(rs.getString("rating_value"));
-            rating.setRatingCode(rs.getInt("rating_code"));
+            Integer ratingCode = rs.getObject("rating_code", Integer.class);
+            rating.setRatingCode(ratingCode);
             rating.setRatingDate(rs.getDate("rating_date") != null ? rs.getDate("rating_date").toLocalDate() : null);
             rating.setCreatedAt(rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toLocalDateTime() : null);
             return rating;
