@@ -33,14 +33,15 @@ public class WebController {
                           @RequestParam(defaultValue = "false") boolean showOffer,
                           @RequestParam(defaultValue = "") String searchText,
                           @RequestParam(defaultValue = "0.30") double feePercent,
+                          @RequestParam(defaultValue = "50") double maxYield,
                           Model model) {
         try {
-            logger.info("Loading top bonds page with limit: {}, minWeeks: {}, maxWeeks: {}, showOffer: {}, searchText: '{}', feePercent: {}", 
-                       limit, minWeeksToMaturity, maxWeeksToMaturity, showOffer, searchText, feePercent);
+            logger.info("Loading top bonds page with limit: {}, minWeeks: {}, maxWeeks: {}, showOffer: {}, searchText: '{}', feePercent: {}, maxYield: {}", 
+                       limit, minWeeksToMaturity, maxWeeksToMaturity, showOffer, searchText, feePercent, maxYield);
             
             // Получаем облигации без пересчёта комиссии
             List<Bond> originalBonds = bondRepository.findTopByAnnualYieldAndMaturityRange(
-                limit * 3, minWeeksToMaturity, maxWeeksToMaturity, showOffer); // Берём больше для фильтрации
+                limit * 3, minWeeksToMaturity, maxWeeksToMaturity, showOffer, maxYield); // Берём больше для фильтрации
             
             // Применяем текстовый фильтр если нужно
             if (searchText != null && !searchText.trim().isEmpty()) {
@@ -58,11 +59,11 @@ public class WebController {
             List<Bond> bonds = originalBonds.stream()
                 .map(bond -> calculationService.calculateBondWithCustomFee(bond, customFeePercent))
                 .filter(bond -> {
-                    // Фильтруем по доходности <= 50%
+                    // Фильтруем по максимальной доходности
                     BigDecimal yield = showOffer && bond.getOfferDate() != null && bond.getAnnualYieldOffer() != null 
                         ? bond.getAnnualYieldOffer() 
                         : bond.getAnnualYield();
-                    return yield != null && yield.compareTo(BigDecimal.valueOf(50)) <= 0;
+                    return yield != null && yield.compareTo(BigDecimal.valueOf(maxYield)) <= 0;
                 })
                 .sorted((b1, b2) -> {
                     // Сортировка по доходности с учётом оферты
@@ -103,6 +104,7 @@ public class WebController {
             model.addAttribute("showOffer", showOffer);
             model.addAttribute("searchText", searchText);
             model.addAttribute("feePercent", feePercent);
+            model.addAttribute("maxYield", maxYield);
             
             return "top-bonds";
             
