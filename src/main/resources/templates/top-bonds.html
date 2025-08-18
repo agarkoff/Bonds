@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -32,6 +32,34 @@
             margin: 0;
             font-size: 2.2em;
             font-weight: 300;
+        }
+        
+        .header a {
+            color: white;
+            text-decoration: none;
+            padding: 5px 8px;
+            border-radius: 3px;
+            transition: background-color 0.2s;
+        }
+        
+        .header a:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+        }
+        
+        .header button {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 5px 8px;
+            border-radius: 3px;
+            transition: background-color 0.2s;
+        }
+        
+        .header button:hover {
+            background-color: rgba(255, 255, 255, 0.1);
         }
         
         .info {
@@ -242,7 +270,21 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🏆 Топ облигаций по доходности</h1>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="flex: 1;"></div>
+                <h1 style="flex: 2; text-align: center; margin: 0;">🏆 Топ облигаций по доходности</h1>
+                <div style="flex: 1; text-align: right;">
+                    <div sec:authorize="!isAuthenticated()" style="font-size: 14px;">
+                        <a th:href="@{/telegram-login}">📱 Войти через Telegram</a>
+                    </div>
+                    <div sec:authorize="isAuthenticated()" style="font-size: 14px;">
+                        <a th:href="@{/user/profile}" style="margin-right: 10px;">👤 <span sec:authentication="principal.name">Профиль</span></a>
+                        <form th:action="@{/logout}" method="post" style="display: inline;">
+                            <button type="submit">🚪 Выход</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <!-- Фильтры вверху страницы -->
@@ -296,6 +338,7 @@
                 <strong>Обновлено:</strong> <span th:text="${#temporals.format(#temporals.createNow(), 'dd.MM.yyyy HH:mm')}"></span>
             </div>
         </div>
+        
         
         <div class="table-container">
             <table>

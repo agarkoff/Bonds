@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профиль пользователя - Bonds</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .header h1 {
+            color: #333;
+            margin: 0 0 10px 0;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #0088cc;
+        }
+        .user-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin-right: 20px;
+            background: #0088cc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .user-details h3 {
+            margin: 0 0 5px 0;
+            color: #333;
+        }
+        .user-details p {
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+        }
+        .telegram-info {
+            background: #e8f4fd;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+        .telegram-info small {
+            color: #0088cc;
+        }
+        .subscriptions-section {
+            margin-top: 30px;
+        }
+        .subscriptions-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .subscriptions-header h2 {
+            margin: 0;
+            color: #333;
+        }
+        .subscription-count {
+            background: #007bff;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .subscription-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            border-left: 3px solid #007bff;
+        }
+        .subscription-item h4 {
+            margin: 0 0 5px 0;
+            color: #333;
+        }
+        .subscription-item p {
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .navigation {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+        .navigation a {
+            color: #007bff;
+            text-decoration: none;
+            margin: 0 15px;
+            padding: 8px 16px;
+            border: 1px solid #007bff;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .navigation a:hover {
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+        }
+        .logout-btn {
+            background: #dc3545 !important;
+            border-color: #dc3545 !important;
+        }
+        .logout-btn:hover {
+            background: #c82333 !important;
+            border-color: #bd2130 !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>👤 Профиль пользователя</h1>
+            <p>Bonds - система анализа облигаций</p>
+        </div>
+        
+        <div class="user-info">
+            <div class="user-avatar" th:if="${user.photoUrl != null}">
+                <img th:src="${user.photoUrl}" alt="Аватар" style="width: 100%; height: 100%; border-radius: 50%;">
+            </div>
+            <div class="user-avatar" th:unless="${user.photoUrl != null}">
+                📱
+            </div>
+            <div class="user-details">
+                <h3 th:text="${user.displayName}">Имя пользователя</h3>
+                <p>Авторизован через Telegram</p>
+                <div class="telegram-info">
+                    <small>
+                        <strong>Telegram ID:</strong> <span th:text="${user.telegramId}">123456789</span><br>
+                        <span th:if="${user.username != null}">
+                            <strong>Username:</strong> @<span th:text="${user.username}">username</span><br>
+                        </span>
+                        <strong>Дата авторизации:</strong> 
+                        <span th:text="${#temporals.format(user.createdAt, 'dd.MM.yyyy HH:mm')}">01.01.2024 12:00</span>
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="subscriptions-section">
+            <div class="subscriptions-header">
+                <h2>📋 Подписки на оферты</h2>
+                <span class="subscription-count" th:text="${subscriptionCount}">0</span>
+            </div>
+            
+            <div th:if="${subscriptions.empty}" class="empty-state">
+                <p>📝 У вас пока нет активных подписок на оферты облигаций.</p>
+                <p>Используйте Telegram бота для добавления облигаций в отслеживание.</p>
+            </div>
+            
+            <div th:unless="${subscriptions.empty}">
+                <div th:each="subscription : ${subscriptions}" class="subscription-item">
+                    <h4 th:text="${subscription.isin}">RU000A0JX0J2</h4>
+                    <p>
+                        <strong>Дата добавления:</strong> 
+                        <span th:text="${#temporals.format(subscription.createdAt, 'dd.MM.yyyy HH:mm')}">01.01.2024 12:00</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="navigation">
+            <a th:href="@{/}">🏠 На главную</a>
+            <a th:href="@{/logout}" class="logout-btn">🚪 Выйти</a>
+        </div>
+    </div>
+</body>
+</html>

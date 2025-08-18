@@ -85,3 +85,40 @@ CREATE TABLE offer_subscription (
 
 CREATE INDEX idx_offer_subscription_chat_id ON offer_subscription(chat_id);
 CREATE INDEX idx_offer_subscription_isin ON offer_subscription(isin);
+
+--changeset bonds:8
+CREATE TABLE telegram_users (
+    id SERIAL PRIMARY KEY,
+    telegram_id BIGINT NOT NULL UNIQUE,
+    username VARCHAR(255),
+    first_name VARCHAR(255),
+    last_name VARCHAR(255),
+    photo_url TEXT,
+    auth_date BIGINT,
+    hash VARCHAR(512),
+    enabled BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_telegram_users_telegram_id ON telegram_users(telegram_id);
+CREATE INDEX idx_telegram_users_username ON telegram_users(username);
+
+--changeset bonds:9
+ALTER TABLE offer_subscription ADD COLUMN telegram_user_id BIGINT;
+
+-- Обновляем существующие записи, связываем их с telegram_users по chat_id (который равен telegram_id)
+UPDATE offer_subscription 
+SET telegram_user_id = (SELECT id FROM telegram_users WHERE telegram_id = offer_subscription.chat_id)
+WHERE telegram_user_id IS NULL;
+
+-- Добавляем внешний ключ
+ALTER TABLE offer_subscription 
+ADD CONSTRAINT fk_offer_subscription_telegram_user 
+FOREIGN KEY (telegram_user_id) REFERENCES telegram_users(id);
+
+CREATE INDEX idx_offer_subscription_telegram_user_id ON offer_subscription(telegram_user_id);
+
+--changeset bonds:10
+-- Удаляем таблицу users, так как теперь используем только Telegram авторизацию
+DROP TABLE IF EXISTS users CASCADE;

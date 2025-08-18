@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Debug - Bonds</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .info-block {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #007bff;
+        }
+        .error-block {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+        }
+        .success-block {
+            background: #d4edda;
+            border-left-color: #28a745;
+        }
+        .code {
+            background: #f1f3f4;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            margin: 10px 0;
+        }
+        .navigation {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+        .navigation a {
+            color: #007bff;
+            text-decoration: none;
+            margin: 0 15px;
+            padding: 8px 16px;
+            border: 1px solid #007bff;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .navigation a:hover {
+            background: #007bff;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 Telegram Bot Debug</h1>
+            <p>Диагностика настроек Telegram бота</p>
+        </div>
+        
+        <div class="info-block">
+            <h3>📋 Текущие настройки</h3>
+            <p><strong>Bot Username:</strong> <span th:text="${botUsername}">BondsOfferBot</span></p>
+            <p><strong>Bot Token настроен:</strong> 
+                <span th:if="${botTokenSet}" style="color: green;">✅ Да</span>
+                <span th:unless="${botTokenSet}" style="color: red;">❌ Нет</span>
+            </p>
+            <p><strong>Длина токена:</strong> <span th:text="${botTokenLength}">0</span> символов</p>
+        </div>
+        
+        <div th:if="${!botTokenSet}" class="info-block error-block">
+            <h3>❌ Проблема: Bot Token не настроен</h3>
+            <p>Для работы Telegram авторизации необходимо настроить BOT_TOKEN.</p>
+            <div class="code">
+                # В application.yml или переменной окружения:
+                BOT_TOKEN=1234567890:ABCDEF...
+            </div>
+        </div>
+        
+        <div th:if="${botTokenSet}" class="info-block success-block">
+            <h3>✅ Bot Token настроен</h3>
+            <p>Токен бота найден в конфигурации.</p>
+        </div>
+        
+        <div class="info-block">
+            <h3>🔍 Возможные причины ошибки "Username invalid"</h3>
+            <ol>
+                <li><strong>Бот не существует:</strong> Убедитесь, что бот <code th:text="${botUsername}">BondsOfferBot</code> создан в @BotFather</li>
+                <li><strong>Неправильное имя:</strong> Проверьте имя бота (без @)</li>
+                <li><strong>Домен не настроен:</strong> В @BotFather добавьте домен для Login Widget:
+                    <div class="code">/setdomain<br>@<span th:text="${botUsername}">BondsOfferBot</span><br>your-domain.com</div>
+                </li>
+                <li><strong>Бот не активирован:</strong> Отправьте /start боту в Telegram</li>
+            </ol>
+        </div>
+        
+        <div class="info-block">
+            <h3>🛠️ Как исправить блокировку браузера</h3>
+            
+            <h4>1. Настройка домена в @BotFather:</h4>
+            <ol>
+                <li>Перейдите к @BotFather в Telegram</li>
+                <li>Используйте команду <code>/setdomain</code></li>
+                <li>Выберите вашего бота <code th:text="${botUsername}">BondsOfferBot</code></li>
+                <li>Укажите домен:
+                    <div class="code">
+                        Для разработки: localhost<br>
+                        Для продакшн: your-domain.com
+                    </div>
+                </li>
+                <li>Проверьте, что бот активен командой <code>/mybots</code></li>
+            </ol>
+            
+            <h4>2. Проверка CORS и CSP:</h4>
+            <ul>
+                <li>Откройте Developer Tools (F12)</li>
+                <li>Во вкладке Console ищите ошибки CORS или CSP</li>
+                <li>Во вкладке Network проверьте запросы к oauth.telegram.org</li>
+            </ul>
+            
+            <h4>3. Типичные ошибки:</h4>
+            <div class="code">
+                ❌ "Mixed Content" - HTTPS страница загружает HTTP контент<br>
+                ❌ "CORS policy" - домен не авторизован<br>
+                ❌ "net::ERR_BLOCKED_BY_CLIENT" - блокировщик рекламы<br>
+                ❌ "Username invalid" - бот не настроен в BotFather
+            </div>
+        </div>
+        
+        <div class="info-block">
+            <h3>🔐 Проблема Mixed Content (HTTP → HTTPS)</h3>
+            <p>Если ваш сайт работает по HTTP, браузер блокирует HTTPS ресурсы Telegram.</p>
+            
+            <h4>✅ Решение 1: Настроить HTTPS (Рекомендуется)</h4>
+            <div class="code">
+                # Генерация SSL сертификата<br>
+                ./generate-ssl-cert.sh<br><br>
+                # Запуск с HTTPS<br>
+                export SSL_ENABLED=true<br>
+                mvn spring-boot:run<br><br>
+                # Откройте: https://localhost:8080
+            </div>
+            
+            <h4>⚠️ Решение 2: HTTP прокси (только для разработки)</h4>
+            <p>Создан прокси <code>/proxy/telegram-widget.js</code> для обхода CORS</p>
+            
+            <h4>🔄 Решение 3: Альтернативная авторизация</h4>
+            <p>Прямая ссылка на бота в Telegram для авторизации</p>
+        </div>
+        
+        <div class="info-block">
+            <h3>🧪 Тестирование</h3>
+            <p>Проверьте текущий протокол: <strong id="current-protocol"></strong></p>
+            <script>
+                document.getElementById('current-protocol').textContent = window.location.protocol;
+                if (window.location.protocol === 'http:') {
+                    document.getElementById('current-protocol').style.color = 'red';
+                } else {
+                    document.getElementById('current-protocol').style.color = 'green';
+                }
+            </script>
+            
+            <p>Ссылки для тестирования:</p>
+            <ul>
+                <li><a href="/telegram-login">HTTP: Telegram авторизация</a></li>
+                <li><a href="https://localhost:8080/telegram-login" target="_blank">HTTPS: Telegram авторизация</a></li>
+                <li>Откройте F12 → Console для просмотра ошибок</li>
+            </ul>
+        </div>
+        
+        <div class="navigation">
+            <a href="/telegram-login">📱 Telegram Login</a>
+            <a href="/">🏠 На главную</a>
+        </div>
+    </div>
+</body>
+</html>

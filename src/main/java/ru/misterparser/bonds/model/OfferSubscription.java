@@ -12,6 +12,7 @@ public class OfferSubscription {
     private Long chatId;
     private String username;
     private String isin;
+    private Long telegramUserId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

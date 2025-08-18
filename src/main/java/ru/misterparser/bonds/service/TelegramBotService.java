@@ -15,6 +15,8 @@ import ru.misterparser.bonds.model.Bond;
 import ru.misterparser.bonds.model.OfferSubscription;
 import ru.misterparser.bonds.repository.BondRepository;
 import ru.misterparser.bonds.repository.OfferSubscriptionRepository;
+import ru.misterparser.bonds.repository.TelegramUserRepository;
+import ru.misterparser.bonds.model.TelegramUser;
 
 import javax.annotation.PostConstruct;
 import java.time.format.DateTimeFormatter;
@@ -39,6 +41,9 @@ public class TelegramBotService extends TelegramLongPollingBot {
 
     @Autowired
     private BondRepository bondRepository;
+
+    @Autowired
+    private TelegramUserRepository telegramUserRepository;
 
     @PostConstruct
     public void init() {
@@ -79,7 +84,7 @@ public class TelegramBotService extends TelegramLongPollingBot {
                 handleCommand(chatId, username, messageText);
             } else {
                 // Обрабатываем как ISIN для добавления
-                handleIsinInput(chatId, username, messageText);
+                handleIsinInput(message, chatId, username, messageText);
             }
         } catch (Exception e) {
             logger.error("Ошибка при обработке сообщения", e);
@@ -212,7 +217,7 @@ public class TelegramBotService extends TelegramLongPollingBot {
         }
     }
 
-    private void handleIsinInput(Long chatId, String username, String input) {
+    private void handleIsinInput(Message message, Long chatId, String username, String input) {
         String isin = input.trim().toUpperCase();
         
         // Проверяем формат ISIN
@@ -240,8 +245,27 @@ public class TelegramBotService extends TelegramLongPollingBot {
             return;
         }
 
-        // Добавляем подписку
-        subscriptionRepository.addSubscription(chatId, username, isin);
+        // Создаем или получаем пользователя Telegram
+        TelegramUser telegramUser = telegramUserRepository.findByTelegramId(chatId)
+            .orElseGet(() -> {
+                // Создаем нового пользователя, если его нет
+                TelegramUser newUser = new TelegramUser();
+                newUser.setTelegramId(chatId);
+                newUser.setUsername(username);
+                newUser.setEnabled(true);
+                
+                // Получаем дополнительную информацию из сообщения, если доступна
+                User telegramUserInfo = message.getFrom();
+                if (telegramUserInfo != null) {
+                    newUser.setFirstName(telegramUserInfo.getFirstName());
+                    newUser.setLastName(telegramUserInfo.getLastName());
+                }
+                
+                return telegramUserRepository.save(newUser);
+            });
+
+        // Добавляем подписку с связью на telegram_user
+        subscriptionRepository.addSubscription(chatId, username, isin, telegramUser.getId());
 
         StringBuilder response = new StringBuilder();
         response.append("✅ *Облигация добавлена в отслеживание*\n\n");

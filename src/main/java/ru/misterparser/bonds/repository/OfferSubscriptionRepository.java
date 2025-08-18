@@ -25,6 +25,7 @@ public class OfferSubscriptionRepository {
             subscription.setChatId(rs.getLong("chat_id"));
             subscription.setUsername(rs.getString("username"));
             subscription.setIsin(rs.getString("isin"));
+            subscription.setTelegramUserId(rs.getObject("telegram_user_id", Long.class));
             subscription.setCreatedAt(rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toLocalDateTime() : null);
             subscription.setUpdatedAt(rs.getTimestamp("updated_at") != null ? rs.getTimestamp("updated_at").toLocalDateTime() : null);
             return subscription;
@@ -39,6 +40,16 @@ public class OfferSubscriptionRepository {
                     "ON CONFLICT (chat_id, isin) DO UPDATE SET " +
                     "username = EXCLUDED.username, updated_at = CURRENT_TIMESTAMP";
         jdbcTemplate.update(sql, chatId, username, isin);
+    }
+    
+    /**
+     * Добавляет подписку на ISIN для пользователя с telegram_user_id
+     */
+    public void addSubscription(Long chatId, String username, String isin, Long telegramUserId) {
+        String sql = "INSERT INTO offer_subscription (chat_id, username, isin, telegram_user_id) VALUES (?, ?, ?, ?) " +
+                    "ON CONFLICT (chat_id, isin) DO UPDATE SET " +
+                    "username = EXCLUDED.username, telegram_user_id = EXCLUDED.telegram_user_id, updated_at = CURRENT_TIMESTAMP";
+        jdbcTemplate.update(sql, chatId, username, isin, telegramUserId);
     }
 
     /**
