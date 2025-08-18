@@ -36,6 +36,9 @@ public class RatingNotificationService {
     @Autowired
     private TelegramBotService telegramBotService;
 
+    @Autowired
+    private BondFilteringService bondFilteringService;
+
     /**
      * Обрабатывает все подписки на рейтинг и отправляет уведомления
      */
@@ -112,49 +115,18 @@ public class RatingNotificationService {
      * Получает отфильтрованный список облигаций согласно параметрам подписки
      */
     private List<Bond> getFilteredBonds(RatingSubscription subscription) {
-        // Определяем параметры фильтрации
-        int minWeeks = subscription.getMinMaturityWeeks() != null ? subscription.getMinMaturityWeeks() : 0;
-        int maxWeeks = subscription.getMaxMaturityWeeks() != null ? subscription.getMaxMaturityWeeks() : 520; // 10 лет
-        boolean showOffer = subscription.isIncludeOffer();
+        // Создаём параметры фильтрации для единого сервиса
+        BondFilteringService.FilterParams params = new BondFilteringService.FilterParams();
+        params.setMinWeeksToMaturity(subscription.getMinMaturityWeeks());
+        params.setMaxWeeksToMaturity(subscription.getMaxMaturityWeeks());
+        params.setMinYield(subscription.getMinYield());
+        params.setMaxYield(subscription.getMaxYield());
+        params.setIncludeOffer(subscription.isIncludeOffer());
+        params.setCustomFeePercent(null); // Без пересчёта комиссии для уведомлений
+        params.setLimit(null); // Без ограничений, ограничим после
         
-        // Получаем базовый список облигаций
-        List<Bond> bonds = bondRepository.findTopByAnnualYieldAndMaturityRange(
-            minWeeks, maxWeeks, showOffer, 100.0); // максимальная доходность 100%
-
-        // Применяем дополнительные фильтры
-        return bonds.stream()
-            .filter(bond -> {
-                // Фильтр по доходности
-                BigDecimal yield = showOffer && bond.getOfferDate() != null && bond.getAnnualYieldOffer() != null 
-                    ? bond.getAnnualYieldOffer() 
-                    : bond.getAnnualYield();
-                
-                if (yield == null) return false;
-                
-                if (subscription.getMinYield() != null && yield.compareTo(subscription.getMinYield()) < 0) {
-                    return false;
-                }
-                
-                if (subscription.getMaxYield() != null && yield.compareTo(subscription.getMaxYield()) > 0) {
-                    return false;
-                }
-                
-                return true;
-            })
-            .sorted((b1, b2) -> {
-                // Сортировка по доходности (убывание)
-                BigDecimal yield1 = showOffer && b1.getOfferDate() != null && b1.getAnnualYieldOffer() != null 
-                    ? b1.getAnnualYieldOffer() : b1.getAnnualYield();
-                BigDecimal yield2 = showOffer && b2.getOfferDate() != null && b2.getAnnualYieldOffer() != null 
-                    ? b2.getAnnualYieldOffer() : b2.getAnnualYield();
-                
-                if (yield1 == null && yield2 == null) return 0;
-                if (yield1 == null) return 1;
-                if (yield2 == null) return -1;
-                
-                return yield2.compareTo(yield1);
-            })
-            .collect(Collectors.toList());
+        // Используем единый сервис фильтрации и сортировки
+        return bondFilteringService.getFilteredAndSortedBonds(params);
     }
 
     /**
@@ -227,8 +199,8 @@ public class RatingNotificationService {
                 message.append("\n   ").append(bond.getShortName());
             }
             
-            // Доходность
-            BigDecimal yield = isUsingOfferData ? bond.getAnnualYieldOffer() : bond.getAnnualYield();
+            // Доходность (используем тот же метод, что и в BondFilteringService)
+            BigDecimal yield = bondFilteringService.getEffectiveYield(bond, subscription.isIncludeOffer());
             
             if (yield != null) {
                 message.append("\n   📊 ").append(String.format("%.2f", yield)).append("% годовых");

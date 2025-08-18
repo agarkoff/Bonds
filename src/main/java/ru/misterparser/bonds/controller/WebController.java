@@ -10,10 +10,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import ru.misterparser.bonds.model.Bond;
 import ru.misterparser.bonds.repository.BondRepository;
 import ru.misterparser.bonds.service.CalculationService;
+import ru.misterparser.bonds.service.BondFilteringService;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Controller
 public class WebController {
@@ -25,6 +25,9 @@ public class WebController {
     
     @Autowired
     private CalculationService calculationService;
+    
+    @Autowired
+    private BondFilteringService bondFilteringService;
 
     @GetMapping("/")
     public String topBonds(@RequestParam(defaultValue = "50") int limit,
@@ -39,62 +42,18 @@ public class WebController {
             logger.info("Loading top bonds page with limit: {}, minWeeks: {}, maxWeeks: {}, showOffer: {}, searchText: '{}', feePercent: {}, maxYield: {}", 
                        limit, minWeeksToMaturity, maxWeeksToMaturity, showOffer, searchText, feePercent, maxYield);
             
-            // Получаем облигации без пересчёта комиссии
-            List<Bond> originalBonds = bondRepository.findTopByAnnualYieldAndMaturityRange(
-                minWeeksToMaturity, maxWeeksToMaturity, showOffer, maxYield); // Берём больше для фильтрации
+            // Создаём параметры фильтрации  
+            BondFilteringService.FilterParams params = new BondFilteringService.FilterParams();
+            params.setMinWeeksToMaturity(minWeeksToMaturity);
+            params.setMaxWeeksToMaturity(maxWeeksToMaturity);
+            params.setMaxYield(BigDecimal.valueOf(maxYield));
+            params.setIncludeOffer(showOffer);
+            params.setSearchText(searchText);
+            params.setCustomFeePercent(BigDecimal.valueOf(feePercent));
+            params.setLimit(limit);
             
-            // Применяем текстовый фильтр если нужно
-            if (searchText != null && !searchText.trim().isEmpty()) {
-                String searchPattern = searchText.trim().toLowerCase();
-                originalBonds = originalBonds.stream()
-                    .filter(bond -> 
-                        (bond.getTicker() != null && bond.getTicker().toLowerCase().contains(searchPattern)) ||
-                        (bond.getShortName() != null && bond.getShortName().toLowerCase().contains(searchPattern))
-                    )
-                    .collect(Collectors.toList());
-            }
-            
-            // Пересчитываем с кастомной комиссией
-            BigDecimal customFeePercent = BigDecimal.valueOf(feePercent);
-            List<Bond> bonds = originalBonds.stream()
-                .map(bond -> calculationService.calculateBondWithCustomFee(bond, customFeePercent))
-                .filter(bond -> {
-                    // Фильтруем по максимальной доходности
-                    BigDecimal yield = showOffer && bond.getOfferDate() != null && bond.getAnnualYieldOffer() != null 
-                        ? bond.getAnnualYieldOffer() 
-                        : bond.getAnnualYield();
-                    return yield != null && yield.compareTo(BigDecimal.valueOf(maxYield)) <= 0;
-                })
-                .sorted((b1, b2) -> {
-                    // Сортировка по доходности с учётом оферты
-                    BigDecimal yield1 = showOffer && b1.getOfferDate() != null && b1.getAnnualYieldOffer() != null 
-                        ? b1.getAnnualYieldOffer() : b1.getAnnualYield();
-                    BigDecimal yield2 = showOffer && b2.getOfferDate() != null && b2.getAnnualYieldOffer() != null 
-                        ? b2.getAnnualYieldOffer() : b2.getAnnualYield();
-                    
-                    if (yield1 == null && yield2 == null) return 0;
-                    if (yield1 == null) return 1;
-                    if (yield2 == null) return -1;
-                    
-                    // Первичная сортировка по FLOOR(доходность)
-                    int floor1 = yield1.intValue();
-                    int floor2 = yield2.intValue();
-                    int floorCompare = Integer.compare(floor2, floor1); // по убыванию
-                    if (floorCompare != 0) return floorCompare;
-                    
-                    // Вторичная сортировка по рейтингу (надёжные выше)
-                    Integer rating1 = b1.getRatingCode();
-                    Integer rating2 = b2.getRatingCode();
-                    if (rating1 != null && rating2 != null) {
-                        int ratingCompare = Integer.compare(rating1, rating2); // по возрастанию (меньше = надёжнее)
-                        if (ratingCompare != 0) return ratingCompare;
-                    }
-                    
-                    // Третичная сортировка по точной доходности
-                    return yield2.compareTo(yield1); // по убыванию
-                })
-                .limit(limit)
-                .collect(Collectors.toList());
+            // Получаем отфильтрованные и отсортированные облигации
+            List<Bond> bonds = bondFilteringService.getFilteredAndSortedBonds(params);
             
             model.addAttribute("bonds", bonds);
             model.addAttribute("totalBonds", bonds.size());
