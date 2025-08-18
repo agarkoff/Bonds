@@ -75,23 +75,23 @@ public class BondRepository {
     }
 
     public List<Bond> findTopByAnnualYieldAndMaturityRange(int limit, int minWeeksToMaturity, int maxWeeksToMaturity) {
-        return findTopByAnnualYieldAndMaturityRange(limit, minWeeksToMaturity, maxWeeksToMaturity, false, 50.0);
+        return findTopByAnnualYieldAndMaturityRange(minWeeksToMaturity, maxWeeksToMaturity, false, 50.0);
     }
 
     public List<Bond> findTopByAnnualYieldAndMaturityRange(int limit, int minWeeksToMaturity, int maxWeeksToMaturity, boolean useOfferYield) {
-        return findTopByAnnualYieldAndMaturityRange(limit, minWeeksToMaturity, maxWeeksToMaturity, useOfferYield, 50.0);
+        return findTopByAnnualYieldAndMaturityRange(minWeeksToMaturity, maxWeeksToMaturity, useOfferYield, 50.0);
     }
 
 
-    public List<Bond> findTopByAnnualYieldAndMaturityRange(int limit, int minWeeksToMaturity, int maxWeeksToMaturity, boolean useOfferYield, double maxYield) {
+    public List<Bond> findTopByAnnualYieldAndMaturityRange(int minWeeksToMaturity, int maxWeeksToMaturity, boolean useOfferYield, double maxYield) {
         if (!useOfferYield) {
             // Обычный режим - сортировка по annual_yield
             String sql = "SELECT * FROM bonds WHERE annual_yield IS NOT NULL AND annual_yield <= " + maxYield + " " +
                          "AND maturity_date IS NOT NULL " +
                          "AND maturity_date >= (CURRENT_DATE + INTERVAL '" + minWeeksToMaturity + " weeks') " +
                          "AND maturity_date <= (CURRENT_DATE + INTERVAL '" + maxWeeksToMaturity + " weeks') " +
-                         "ORDER BY FLOOR(annual_yield) DESC, rating_code ASC, annual_yield DESC LIMIT ?";
-            return jdbcTemplate.query(sql, bondRowMapper, limit);
+                         "ORDER BY FLOOR(annual_yield) DESC, rating_code ASC, annual_yield DESC";
+            return jdbcTemplate.query(sql, bondRowMapper);
         }
         
         // Режим оферты: используем annual_yield_offer если доступно, иначе annual_yield
@@ -123,10 +123,9 @@ public class BondRepository {
                      "    WHEN offer_date IS NOT NULL AND offer_date > CURRENT_DATE AND annual_yield_offer IS NOT NULL " +
                      "    THEN annual_yield_offer " +
                      "    ELSE annual_yield " +
-                     "  END DESC " +
-                     "LIMIT ?";
+                     "  END DESC";
         
-        return jdbcTemplate.query(sql, bondRowMapper, limit);
+        return jdbcTemplate.query(sql, bondRowMapper);
     }
 
     public Optional<Bond> findByIsin(String isin) {

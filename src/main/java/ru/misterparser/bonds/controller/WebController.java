@@ -41,7 +41,7 @@ public class WebController {
             
             // Получаем облигации без пересчёта комиссии
             List<Bond> originalBonds = bondRepository.findTopByAnnualYieldAndMaturityRange(
-                limit * 3, minWeeksToMaturity, maxWeeksToMaturity, showOffer, maxYield); // Берём больше для фильтрации
+                minWeeksToMaturity, maxWeeksToMaturity, showOffer, maxYield); // Берём больше для фильтрации
             
             // Применяем текстовый фильтр если нужно
             if (searchText != null && !searchText.trim().isEmpty()) {
