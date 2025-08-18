@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -184,6 +185,22 @@ public class TelegramAuthService {
             log.error("Ошибка при обработке авторизации Telegram", e);
             return false;
         }
+    }
+    
+    /**
+     * Получает текущего авторизованного пользователя Telegram
+     */
+    public TelegramUser getCurrentUser(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
+        }
+        
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof TelegramUserPrincipal) {
+            return ((TelegramUserPrincipal) principal).getTelegramUser();
+        }
+        
+        return null;
     }
     
     /**

@@ -8,8 +8,10 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import ru.misterparser.bonds.model.OfferSubscription;
+import ru.misterparser.bonds.model.RatingSubscription;
 import ru.misterparser.bonds.model.TelegramUser;
 import ru.misterparser.bonds.repository.OfferSubscriptionRepository;
+import ru.misterparser.bonds.repository.RatingSubscriptionRepository;
 import ru.misterparser.bonds.service.TelegramAuthService;
 
 import java.util.List;
@@ -20,6 +22,7 @@ import java.util.List;
 public class UserController {
     
     private final OfferSubscriptionRepository offerSubscriptionRepository;
+    private final RatingSubscriptionRepository ratingSubscriptionRepository;
     
     @GetMapping("/profile")
     public String profile(Model model) {
@@ -31,12 +34,17 @@ public class UserController {
             TelegramUser telegramUser = principal.getTelegramUser();
             
             // Получаем подписки пользователя
-            List<OfferSubscription> subscriptions = 
+            List<OfferSubscription> offerSubscriptions = 
                 offerSubscriptionRepository.findByUserChatId(telegramUser.getTelegramId());
             
+            List<RatingSubscription> ratingSubscriptions = 
+                ratingSubscriptionRepository.findByTelegramUserId(telegramUser.getId());
+            
             model.addAttribute("user", telegramUser);
-            model.addAttribute("subscriptions", subscriptions);
-            model.addAttribute("subscriptionCount", subscriptions.size());
+            model.addAttribute("offerSubscriptions", offerSubscriptions);
+            model.addAttribute("ratingSubscriptions", ratingSubscriptions);
+            model.addAttribute("offerSubscriptionCount", offerSubscriptions.size());
+            model.addAttribute("ratingSubscriptionCount", ratingSubscriptions.size());
             
             return "user/profile";
         }

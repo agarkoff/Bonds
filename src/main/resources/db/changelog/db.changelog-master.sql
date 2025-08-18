@@ -122,3 +122,34 @@ CREATE INDEX idx_offer_subscription_telegram_user_id ON offer_subscription(teleg
 --changeset bonds:10
 -- Удаляем таблицу users, так как теперь используем только Telegram авторизацию
 DROP TABLE IF EXISTS users CASCADE;
+
+--changeset bonds:11
+CREATE TABLE rating_subscription (
+    id SERIAL PRIMARY KEY,
+    telegram_user_id BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    period_hours INTEGER DEFAULT 24 NOT NULL,
+    min_yield DECIMAL(8,4),
+    max_yield DECIMAL(8,4),
+    ticker_count INTEGER DEFAULT 10 NOT NULL,
+    include_offer BOOLEAN DEFAULT FALSE,
+    min_maturity_weeks INTEGER,
+    max_maturity_weeks INTEGER,
+    enabled BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_sent_at TIMESTAMP,
+    
+    CONSTRAINT fk_rating_subscription_telegram_user 
+    FOREIGN KEY (telegram_user_id) REFERENCES telegram_users(id) ON DELETE CASCADE,
+    
+    CONSTRAINT chk_rating_subscription_period CHECK (period_hours >= 1 AND period_hours <= 168),
+    CONSTRAINT chk_rating_subscription_ticker_count CHECK (ticker_count >= 1 AND ticker_count <= 100),
+    CONSTRAINT chk_rating_subscription_yield_range CHECK (min_yield IS NULL OR max_yield IS NULL OR min_yield <= max_yield),
+    CONSTRAINT chk_rating_subscription_maturity_range CHECK (min_maturity_weeks IS NULL OR max_maturity_weeks IS NULL OR min_maturity_weeks <= max_maturity_weeks)
+);
+
+CREATE INDEX idx_rating_subscription_telegram_user_id ON rating_subscription(telegram_user_id);
+CREATE INDEX idx_rating_subscription_enabled ON rating_subscription(enabled);
+CREATE INDEX idx_rating_subscription_last_sent_at ON rating_subscription(last_sent_at);
+CREATE INDEX idx_rating_subscription_next_send ON rating_subscription(enabled, last_sent_at, period_hours);

@@ -139,6 +139,68 @@
             background: #c82333 !important;
             border-color: #bd2130 !important;
         }
+        
+        .rating-subscription {
+            border-left-color: #28a745;
+        }
+        
+        .subscription-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .subscription-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 12px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .btn-test {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .btn-test:hover {
+            background: #138496;
+        }
+        
+        .status-badge {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .subscription-details {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .subscription-details p {
+            margin: 5px 0;
+        }
     </style>
 </head>
 <body>
@@ -171,19 +233,20 @@
             </div>
         </div>
         
+        <!-- Подписки на оферты -->
         <div class="subscriptions-section">
             <div class="subscriptions-header">
                 <h2>📋 Подписки на оферты</h2>
-                <span class="subscription-count" th:text="${subscriptionCount}">0</span>
+                <span class="subscription-count" th:text="${offerSubscriptionCount}">0</span>
             </div>
             
-            <div th:if="${subscriptions.empty}" class="empty-state">
+            <div th:if="${offerSubscriptions.empty}" class="empty-state">
                 <p>📝 У вас пока нет активных подписок на оферты облигаций.</p>
                 <p>Используйте Telegram бота для добавления облигаций в отслеживание.</p>
             </div>
             
-            <div th:unless="${subscriptions.empty}">
-                <div th:each="subscription : ${subscriptions}" class="subscription-item">
+            <div th:unless="${offerSubscriptions.empty}">
+                <div th:each="subscription : ${offerSubscriptions}" class="subscription-item">
                     <h4 th:text="${subscription.isin}">RU000A0JX0J2</h4>
                     <p>
                         <strong>Дата добавления:</strong> 
@@ -193,10 +256,100 @@
             </div>
         </div>
         
+        <!-- Подписки на рейтинг -->
+        <div class="subscriptions-section">
+            <div class="subscriptions-header">
+                <h2>🔔 Подписки на рейтинг</h2>
+                <span class="subscription-count" th:text="${ratingSubscriptionCount}">0</span>
+            </div>
+            
+            <div th:if="${ratingSubscriptions.empty}" class="empty-state">
+                <p>📊 У вас пока нет активных подписок на рейтинг облигаций.</p>
+                <p>Используйте кнопку "Подписка" на главной странице для создания подписки.</p>
+            </div>
+            
+            <div th:unless="${ratingSubscriptions.empty}">
+                <div th:each="subscription : ${ratingSubscriptions}" class="subscription-item rating-subscription">
+                    <div class="subscription-header">
+                        <h4 th:text="${subscription.name}">Название подписки</h4>
+                        <div class="subscription-actions">
+                            <button class="btn-small btn-test" th:onclick="'sendSubscription(' + ${subscription.id} + ')'">
+                                🚀 Отправить
+                            </button>
+                            <span th:if="${subscription.enabled}" class="status-badge status-active">Активна</span>
+                            <span th:unless="${subscription.enabled}" class="status-badge status-inactive">Неактивна</span>
+                        </div>
+                    </div>
+                    <div class="subscription-details">
+                        <p><strong>Периодичность:</strong> каждые <span th:text="${subscription.periodHours}">24</span> часа</p>
+                        <p><strong>Количество тикеров:</strong> <span th:text="${subscription.tickerCount}">10</span></p>
+                        <p th:if="${subscription.minYield != null or subscription.maxYield != null}">
+                            <strong>Доходность:</strong>
+                            <span th:if="${subscription.minYield != null}">от <span th:text="${#numbers.formatDecimal(subscription.minYield, 0, 2)}">0.00</span>%</span>
+                            <span th:if="${subscription.maxYield != null}">до <span th:text="${#numbers.formatDecimal(subscription.maxYield, 0, 2)}">50.00</span>%</span>
+                        </p>
+                        <p th:if="${subscription.minMaturityWeeks != null or subscription.maxMaturityWeeks != null}">
+                            <strong>Срок погашения:</strong>
+                            <span th:if="${subscription.minMaturityWeeks != null}">от <span th:text="${subscription.minMaturityWeeks}">0</span> нед.</span>
+                            <span th:if="${subscription.maxMaturityWeeks != null}">до <span th:text="${subscription.maxMaturityWeeks}">52</span> нед.</span>
+                        </p>
+                        <p th:if="${subscription.includeOffer}"><strong>🎯 Учитываются оферты</strong></p>
+                        <p>
+                            <strong>Создана:</strong> 
+                            <span th:text="${#temporals.format(subscription.createdAt, 'dd.MM.yyyy HH:mm')}">01.01.2024 12:00</span>
+                        </p>
+                        <p th:if="${subscription.lastSentAt != null}">
+                            <strong>Последняя отправка:</strong> 
+                            <span th:text="${#temporals.format(subscription.lastSentAt, 'dd.MM.yyyy HH:mm')}">01.01.2024 12:00</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <div class="navigation">
             <a th:href="@{/}">🏠 На главную</a>
             <a th:href="@{/logout}" class="logout-btn">🚪 Выйти</a>
         </div>
     </div>
+    
+    <script>
+        function sendSubscription(subscriptionId) {
+            if (!confirm("Отправить уведомления по подписке прямо сейчас?")) {
+                return;
+            }
+            
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = "⏳ Отправка...";
+            button.disabled = true;
+            
+            fetch(`/api/subscriptions/${subscriptionId}/send`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                return response.text().then(text => {
+                    throw new Error(text || "Ошибка при отправке");
+                });
+            })
+            .then(data => {
+                alert("Уведомления успешно отправлены!");
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("Ошибка при отправке: " + error.message);
+            })
+            .finally(() => {
+                button.textContent = originalText;
+                button.disabled = false;
+            });
+        }
+    </script>
 </body>
 </html>
