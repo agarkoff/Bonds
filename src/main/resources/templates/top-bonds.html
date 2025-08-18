@@ -292,15 +292,15 @@
             <form method="get" style="display: inline;">
                 <div class="form-group">
                     <label for="limit">Количество тикеров:</label>
-                    <input type="number" id="limit" name="limit" th:value="${limit}" min="10" max="500" step="10">
+                    <input type="number" id="limit" name="limit" th:value="${limit}" min="10" step="10">
                 </div>
                 <div class="form-group">
                     <label for="minWeeksToMaturity">Недель до погашения от:</label>
-                    <input type="number" id="minWeeksToMaturity" name="minWeeksToMaturity" th:value="${minWeeksToMaturity}" min="0" max="520" step="1">
+                    <input type="number" id="minWeeksToMaturity" name="minWeeksToMaturity" th:value="${minWeeksToMaturity}" min="0" step="1">
                 </div>
                 <div class="form-group">
                     <label for="maxWeeksToMaturity">до:</label>
-                    <input type="number" id="maxWeeksToMaturity" name="maxWeeksToMaturity" th:value="${maxWeeksToMaturity}" min="0" max="520" step="1">
+                    <input type="number" id="maxWeeksToMaturity" name="maxWeeksToMaturity" th:value="${maxWeeksToMaturity}" min="0" step="1">
                 </div>
                 <div class="form-group">
                     <label for="feePercent">Комиссия %:</label>
