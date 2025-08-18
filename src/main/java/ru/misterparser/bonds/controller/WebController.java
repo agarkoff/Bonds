@@ -26,7 +26,7 @@ public class WebController {
     @Autowired
     private CalculationService calculationService;
 
-    @GetMapping("/top.html")
+    @GetMapping("/")
     public String topBonds(@RequestParam(defaultValue = "50") int limit,
                           @RequestParam(defaultValue = "0") int minWeeksToMaturity,
                           @RequestParam(defaultValue = "26") int maxWeeksToMaturity,
