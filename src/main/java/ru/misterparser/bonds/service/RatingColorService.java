@@ -250,18 +250,4 @@ public class RatingColorService {
         return rating + " " + balls;
     }
 
-    /**
-     * Получает все загруженные маппинги (для отладки)
-     */
-    public Map<String, String> getAllRatingBalls() {
-        return new HashMap<>(ratingBalls);
-    }
-
-    /**
-     * Перезагружает маппинги из файла
-     */
-    public void reload() {
-        ratingBalls.clear();
-        loadRatingBalls();
-    }
 }

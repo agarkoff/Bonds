@@ -8,8 +8,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import ru.misterparser.bonds.model.Bond;
-import ru.misterparser.bonds.repository.BondRepository;
-import ru.misterparser.bonds.service.CalculationService;
 import ru.misterparser.bonds.service.BondFilteringService;
 
 import java.math.BigDecimal;
@@ -20,12 +18,6 @@ public class WebController {
 
     private static final Logger logger = LoggerFactory.getLogger(WebController.class);
 
-    @Autowired
-    private BondRepository bondRepository;
-    
-    @Autowired
-    private CalculationService calculationService;
-    
     @Autowired
     private BondFilteringService bondFilteringService;
 
