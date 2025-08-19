@@ -1,17 +1,19 @@
 package ru.misterparser.bonds.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -20,13 +22,19 @@ public class RatingColorService {
 
     private static final Logger logger = LoggerFactory.getLogger(RatingColorService.class);
     private List<String> colors = new ArrayList<>();
+    private Map<String, String> ratingBalls = new HashMap<>();
 
     @PostConstruct
+    public void init() {
+        loadColors();
+        loadRatingBalls();
+    }
+
     public void loadColors() {
         try {
             ClassPathResource resource = new ClassPathResource("rating-gradient.js");
             String content = new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-            
+
             // Парсим JS файл для извлечения hex цветов
             parseColorsFromJS(content);
             
@@ -102,7 +110,7 @@ public class RatingColorService {
         // 249-253: низкие рейтинги (ruCCC - ruD) - красные цвета (худшие - самые красные)
 
         int totalColors = colors.size();
-        
+
         if (ratingCode >= 48 && ratingCode <= 54) {
             // Группа A: ruAAA - ruA- (коды 48-54) - зелёные оттенки (последняя треть массива)
             // ruAAA (48) -> самый зелёный (последний цвет), ruA- (54) -> менее зелёный
@@ -119,7 +127,7 @@ public class RatingColorService {
             int orangeEnd = (int) (totalColors * 0.67); // Конец оранжевой зоны (67%)
             int colorIndex = (int) (orangeEnd - 1 - groupRatio * (orangeEnd - orangeStart - 1));
             return colors.get(Math.max(orangeStart, Math.min(orangeEnd - 1, colorIndex)));
-            
+
         } else if (ratingCode >= 249 && ratingCode <= 253) {
             // Группа C: ruCCC - ruD (коды 249-253) - красные оттенки (первая треть)
             // ruCCC (249) -> менее красный, ruD (253) -> самый красный (первый цвет)
@@ -147,5 +155,113 @@ public class RatingColorService {
                 return colors.get(0);
             }
         }
+    }
+
+    /**
+     * Загружает маппинг рейтингов к цветовым шарам из файла rating-ball.md
+     */
+    private void loadRatingBalls() {
+        try {
+            ClassPathResource resource = new ClassPathResource("rating-ball.md");
+
+            if (!resource.exists()) {
+                logger.warn("Файл rating-ball.md не найден в resources, цветовые шары для рейтингов не будут отображаться");
+                return;
+            }
+
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
+
+                String line;
+                int lineNumber = 0;
+
+                while ((line = reader.readLine()) != null) {
+                    lineNumber++;
+                    line = line.trim();
+
+                    if (line.isEmpty() || line.startsWith("#")) {
+                        continue; // Пропускаем пустые строки и комментарии
+                    }
+
+                    // Парсим строку формата: "ruAAA 🟢🟢🟢"
+                    String[] parts = line.split("\\s+", 2);
+                    if (parts.length == 2) {
+                        String rating = parts[0].trim();
+                        String balls = parts[1].trim();
+
+                        ratingBalls.put(rating, balls);
+                        logger.debug("Загружен маппинг рейтинга: {} -> {}", rating, balls);
+                    } else {
+                        logger.warn("Неверный формат строки {} в файле rating-ball.md: {}", lineNumber, line);
+                    }
+                }
+
+                logger.info("Загружено {} маппингов рейтингов из файла rating-ball.md", ratingBalls.size());
+
+            }
+        } catch (IOException e) {
+            logger.error("Ошибка при загрузке файла rating-ball.md", e);
+        }
+    }
+
+    /**
+     * Получает цветовые шары для рейтинга
+     *
+     * @param rating рейтинг облигации (например: "ruAAA", "ruBBB+")
+     * @return цветовые шары или пустую строку, если маппинг не найден
+     */
+    public String getRatingBalls(String rating) {
+        if (rating == null || rating.trim().isEmpty()) {
+            return "";
+        }
+
+        String normalizedRating = rating.trim();
+        String balls = ratingBalls.get(normalizedRating);
+
+        if (balls == null) {
+            // Попробуем найти без учёта регистра
+            for (Map.Entry<String, String> entry : ratingBalls.entrySet()) {
+                if (entry.getKey().equalsIgnoreCase(normalizedRating)) {
+                    balls = entry.getValue();
+                    break;
+                }
+            }
+        }
+
+        return balls != null ? balls : "";
+    }
+
+    /**
+     * Форматирует рейтинг с цветовыми шарами для отображения
+     *
+     * @param rating рейтинг облигации
+     * @return отформатированная строка с рейтингом и шарами
+     */
+    public String formatRatingWithBalls(String rating) {
+        if (rating == null || rating.trim().isEmpty()) {
+            return "";
+        }
+
+        String balls = getRatingBalls(rating);
+        if (balls.isEmpty()) {
+            return rating; // Возвращаем только рейтинг, если шары не найдены
+        }
+
+        return rating + " " + balls;
+    }
+
+    /**
+     * Получает все загруженные маппинги (для отладки)
+     */
+    public Map<String, String> getAllRatingBalls() {
+        return new HashMap<>(ratingBalls);
+    }
+
+    /**
+     * Перезагружает маппинги из файла
+     */
+    public void reload() {
+        ratingBalls.clear();
+        loadRatingBalls();
     }
 }

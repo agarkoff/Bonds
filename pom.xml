@@ -114,6 +114,7 @@
                                     <directory>docs</directory>
                                     <includes>
                                         <include>rating-gradient.js</include>
+                                        <include>rating-ball.md</include>
                                     </includes>
                                 </resource>
                             </resources>

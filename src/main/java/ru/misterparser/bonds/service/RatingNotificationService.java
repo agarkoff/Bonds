@@ -39,6 +39,9 @@ public class RatingNotificationService {
     @Autowired
     private BondFilteringService bondFilteringService;
 
+    @Autowired
+    private RatingColorService ratingColorService;
+
     /**
      * Обрабатывает все подписки на рейтинг и отправляет уведомления
      */
@@ -226,9 +229,10 @@ public class RatingNotificationService {
                 }
             }
             
-            // Рейтинг
+            // Рейтинг с цветовыми шарами
             if (bond.getRatingValue() != null) {
-                message.append("\n   ⭐ ").append(bond.getRatingValue());
+                String ratingWithBalls = ratingColorService.formatRatingWithBalls(bond.getRatingValue());
+                message.append("\n   ⭐ ").append(ratingWithBalls);
             }
             
             message.append("\n\n");
