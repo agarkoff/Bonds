@@ -265,149 +265,6 @@
             position: relative;
             display: inline-block;
         }
-        
-        /* Modal styles */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-        
-        .modal-content {
-            background-color: #fefefe;
-            margin: 5% auto;
-            padding: 0;
-            border-radius: 8px;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        }
-        
-        .modal-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 8px 8px 0 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .modal-header h2 {
-            margin: 0;
-            font-size: 1.4em;
-        }
-        
-        .close {
-            color: white;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-            background: none;
-            border: none;
-            padding: 0;
-            line-height: 1;
-        }
-        
-        .close:hover {
-            opacity: 0.7;
-        }
-        
-        .modal-body {
-            padding: 20px;
-        }
-        
-        .form-row {
-            margin-bottom: 15px;
-        }
-        
-        .form-row label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            color: #333;
-        }
-        
-        .form-row input, .form-row select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-            box-sizing: border-box;
-        }
-        
-        .form-row input:focus, .form-row select:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
-        }
-        
-        .form-row-half {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .form-row-half .form-col {
-            flex: 1;
-        }
-        
-        .checkbox-row {
-            display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        
-        .checkbox-row input[type="checkbox"] {
-            width: auto;
-            margin-right: 8px;
-        }
-        
-        .modal-footer {
-            padding: 15px 20px;
-            border-top: 1px solid #eee;
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-        }
-        
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        
-        .btn-primary:hover:not(:disabled) {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-        
-        .btn-primary:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-        
-        .btn-secondary:hover {
-            background: #5a6268;
-        }
     </style>
 </head>
 <body>
@@ -421,7 +278,7 @@
                         <a th:href="@{/telegram-login}">📱 Войти через Telegram</a>
                     </div>
                     <div sec:authorize="isAuthenticated()" style="font-size: 14px;">
-                        <button onclick="openSubscriptionModal()" style="margin-right: 10px;">🔔 Подписка</button>
+                        <button onclick="createSubscription()" style="margin-right: 10px;">🔔 Подписаться</button>
                         <a th:href="@{/user/profile}" style="margin-right: 10px;">👤 <span sec:authentication="principal.name">Профиль</span></a>
                         <form th:action="@{/logout}" method="post" style="display: inline;">
                             <button type="submit">🚪 Выход</button>
@@ -749,66 +606,53 @@
             setTimeout(restoreCursorPosition, 100);
         });
         
-        // Subscription modal functions
-        function openSubscriptionModal() {
-            document.getElementById('subscriptionModal').style.display = 'block';
-        }
-
-        function closeSubscriptionModal() {
-            document.getElementById('subscriptionModal').style.display = 'none';
-        }
-
-        // Close modal when clicking outside of it
-        window.addEventListener('click', function(event) {
-            const modal = document.getElementById('subscriptionModal');
-            if (event.target == modal) {
-                closeSubscriptionModal();
-            }
-        });
-
-        function saveSubscription() {
-            const form = document.getElementById('subscriptionForm');
+        // Simple subscription function using current filter values
+        function createSubscription() {
+            // Get current filter values from the form
+            const form = document.querySelector('form[method="get"]');
             const formData = new FormData(form);
             
-            // Validate required fields
-            if (!formData.get('name') || !formData.get('periodHours') || !formData.get('tickerCount')) {
-                alert('Пожалуйста, заполните все обязательные поля');
-                return;
-            }
+            const minYield = formData.get('minYield') ? parseFloat(formData.get('minYield')) : 0;
+            const maxYield = formData.get('maxYield') ? parseFloat(formData.get('maxYield')) : 50;
+            const minWeeks = formData.get('minWeeksToMaturity') ? parseInt(formData.get('minWeeksToMaturity')) : 0;
+            const maxWeeks = formData.get('maxWeeksToMaturity') ? parseInt(formData.get('maxWeeksToMaturity')) : 26;
+            const tickerCount = formData.get('limit') ? parseInt(formData.get('limit')) : 50;
+            const includeOffer = formData.get('showOffer') === 'on';
+            const searchText = formData.get('searchText') || '';
             
-            // Convert FormData to JSON
+            // Generate automatic subscription name based on filters
+            let subscriptionName = `Рейтинг`;
+            if (minYield > 0 || maxYield < 50) {
+                subscriptionName += ` ${minYield}%-${maxYield}%`;
+            }
+            if (minWeeks > 0 || maxWeeks < 26) {
+                subscriptionName += ` ${minWeeks}-${maxWeeks}нед`;
+            }
+            if (includeOffer) {
+                subscriptionName += ` с офертами`;
+            }
+            if (searchText) {
+                subscriptionName += ` "${searchText}"`;
+            }
+            subscriptionName += ` (${tickerCount} тикеров)`;
+
             const subscription = {
-                name: formData.get('name'),
-                periodHours: parseInt(formData.get('periodHours')),
-                minYield: formData.get('minYield') ? parseFloat(formData.get('minYield')) : null,
-                maxYield: formData.get('maxYield') ? parseFloat(formData.get('maxYield')) : null,
-                tickerCount: parseInt(formData.get('tickerCount')),
-                includeOffer: formData.get('includeOffer') === 'on',
-                minMaturityWeeks: formData.get('minMaturityWeeks') ? parseInt(formData.get('minMaturityWeeks')) : null,
-                maxMaturityWeeks: formData.get('maxMaturityWeeks') ? parseInt(formData.get('maxMaturityWeeks')) : null
+                name: subscriptionName,
+                periodHours: 1, // Default 1 hour as specified
+                minYield: minYield,
+                maxYield: maxYield,
+                tickerCount: tickerCount,
+                includeOffer: includeOffer,
+                minMaturityWeeks: minWeeks,
+                maxMaturityWeeks: maxWeeks
             };
-            
-            // Validate yield range
-            if (subscription.minYield !== null && subscription.maxYield !== null && 
-                subscription.minYield > subscription.maxYield) {
-                alert('Минимальная доходность не может быть больше максимальной');
-                return;
-            }
-            
-            // Validate maturity range
-            if (subscription.minMaturityWeeks !== null && subscription.maxMaturityWeeks !== null && 
-                subscription.minMaturityWeeks > subscription.maxMaturityWeeks) {
-                alert('Минимальный срок погашения не может быть больше максимального');
-                return;
-            }
-            
-            // Show loading state
-            const saveBtn = document.querySelector('.btn-primary');
-            const originalText = saveBtn.textContent;
-            saveBtn.textContent = 'Сохранение...';
-            saveBtn.disabled = true;
-            
-            // Send AJAX request
+
+            // Save button text change
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = 'Создание...';
+            btn.disabled = true;
+
             fetch('/api/subscriptions', {
                 method: 'POST',
                 headers: {
@@ -817,20 +661,15 @@
                 body: JSON.stringify(subscription)
             })
             .then(response => {
-                if (response.ok) {
-                    return response.json();
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        throw new Error(text || 'Ошибка при создании подписки');
+                    });
                 }
-                return response.text().then(text => {
-                    throw new Error(text || 'Ошибка при сохранении подписки');
-                });
+                return response.json();
             })
             .then(data => {
-                alert('Подписка успешно создана!');
-                closeSubscriptionModal();
-                form.reset();
-                // Reset default values
-                document.getElementById('periodHours').value = '24';
-                document.getElementById('tickerCount').value = '10';
+                alert(`Подписка "${subscriptionName}" успешно создана!`);
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -838,68 +677,10 @@
             })
             .finally(() => {
                 // Restore button state
-                saveBtn.textContent = originalText;
-                saveBtn.disabled = false;
+                btn.textContent = originalText;
+                btn.disabled = false;
             });
         }
     </script>
-    <!-- Subscription Modal -->
-    <div id="subscriptionModal" class="modal" sec:authorize="isAuthenticated()">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>🔔 Настройка подписки на рейтинг</h2>
-                <button class="close" onclick="closeSubscriptionModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="subscriptionForm">
-                    <div class="form-row">
-                        <label for="subscriptionName">Название подписки:</label>
-                        <input type="text" id="subscriptionName" name="name" placeholder="Например: Моя подписка" required>
-                    </div>
-                    
-                    <div class="form-row">
-                        <label for="periodHours">Периодичность отправки (часов):</label>
-                        <input type="number" id="periodHours" name="periodHours" value="24" min="1" max="168" required>
-                    </div>
-                    
-                    <div class="form-row-half">
-                        <div class="form-col">
-                            <label for="minYield">Доходность от (%):</label>
-                            <input type="number" id="minYield" name="minYield" step="0.01" min="0" max="100" placeholder="0.00">
-                        </div>
-                        <div class="form-col">
-                            <label for="maxYield">Доходность до (%):</label>
-                            <input type="number" id="maxYield" name="maxYield" step="0.01" min="0" max="100" placeholder="50.00">
-                        </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <label for="tickerCount">Количество тикеров:</label>
-                        <input type="number" id="tickerCount" name="tickerCount" value="10" min="1" max="100" required>
-                    </div>
-                    
-                    <div class="checkbox-row">
-                        <input type="checkbox" id="includeOffer" name="includeOffer">
-                        <label for="includeOffer">Учитывать оферты</label>
-                    </div>
-                    
-                    <div class="form-row-half">
-                        <div class="form-col">
-                            <label for="minMaturityWeeks">Недель до погашения от:</label>
-                            <input type="number" id="minMaturityWeeks" name="minMaturityWeeks" min="0" max="520" placeholder="0">
-                        </div>
-                        <div class="form-col">
-                            <label for="maxMaturityWeeks">Недель до погашения до:</label>
-                            <input type="number" id="maxMaturityWeeks" name="maxMaturityWeeks" min="0" max="520" placeholder="52">
-                        </div>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeSubscriptionModal()">Отмена</button>
-                <button type="button" class="btn btn-primary" onclick="saveSubscription()">Сохранить</button>
-            </div>
-        </div>
-    </div>
 </body>
 </html>
