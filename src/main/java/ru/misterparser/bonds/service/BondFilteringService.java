@@ -82,11 +82,12 @@ public class BondFilteringService {
         int minWeeks = params.getMinWeeksToMaturity() != null ? params.getMinWeeksToMaturity() : 0;
         int maxWeeks = params.getMaxWeeksToMaturity() != null ? params.getMaxWeeksToMaturity() : 520;
         boolean showOffer = params.getIncludeOffer() != null ? params.getIncludeOffer() : false;
+        double minYieldDouble = params.getMinYield() != null ? params.getMinYield().doubleValue() : 0.0;
         double maxYieldDouble = params.getMaxYield() != null ? params.getMaxYield().doubleValue() : 100.0;
         
         // Получаем базовый список облигаций
         List<Bond> originalBonds = bondRepository.findTopByAnnualYieldAndMaturityRange(
-            minWeeks, maxWeeks, showOffer, maxYieldDouble);
+            minWeeks, maxWeeks, showOffer, minYieldDouble, maxYieldDouble);
         
         // Применяем текстовый фильтр если нужно
         if (params.getSearchText() != null && !params.getSearchText().trim().isEmpty()) {

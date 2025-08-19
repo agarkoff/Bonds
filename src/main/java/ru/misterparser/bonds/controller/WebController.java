@@ -36,16 +36,18 @@ public class WebController {
                           @RequestParam(defaultValue = "false") boolean showOffer,
                           @RequestParam(defaultValue = "") String searchText,
                           @RequestParam(defaultValue = "0.30") double feePercent,
+                          @RequestParam(defaultValue = "0") double minYield,
                           @RequestParam(defaultValue = "50") double maxYield,
                           Model model) {
         try {
-            logger.info("Loading top bonds page with limit: {}, minWeeks: {}, maxWeeks: {}, showOffer: {}, searchText: '{}', feePercent: {}, maxYield: {}", 
-                       limit, minWeeksToMaturity, maxWeeksToMaturity, showOffer, searchText, feePercent, maxYield);
+            logger.info("Loading top bonds page with limit: {}, minWeeks: {}, maxWeeks: {}, showOffer: {}, searchText: '{}', feePercent: {}, minYield: {}, maxYield: {}", 
+                       limit, minWeeksToMaturity, maxWeeksToMaturity, showOffer, searchText, feePercent, minYield, maxYield);
             
             // Создаём параметры фильтрации  
             BondFilteringService.FilterParams params = new BondFilteringService.FilterParams();
             params.setMinWeeksToMaturity(minWeeksToMaturity);
             params.setMaxWeeksToMaturity(maxWeeksToMaturity);
+            params.setMinYield(BigDecimal.valueOf(minYield));
             params.setMaxYield(BigDecimal.valueOf(maxYield));
             params.setIncludeOffer(showOffer);
             params.setSearchText(searchText);
@@ -63,6 +65,7 @@ public class WebController {
             model.addAttribute("showOffer", showOffer);
             model.addAttribute("searchText", searchText);
             model.addAttribute("feePercent", feePercent);
+            model.addAttribute("minYield", minYield);
             model.addAttribute("maxYield", maxYield);
             
             return "top-bonds";

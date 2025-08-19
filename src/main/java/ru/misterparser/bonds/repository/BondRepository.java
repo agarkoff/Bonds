@@ -75,18 +75,18 @@ public class BondRepository {
     }
 
     public List<Bond> findTopByAnnualYieldAndMaturityRange(int limit, int minWeeksToMaturity, int maxWeeksToMaturity) {
-        return findTopByAnnualYieldAndMaturityRange(minWeeksToMaturity, maxWeeksToMaturity, false, 50.0);
+        return findTopByAnnualYieldAndMaturityRange(minWeeksToMaturity, maxWeeksToMaturity, false, 0.0, 50.0);
     }
 
     public List<Bond> findTopByAnnualYieldAndMaturityRange(int limit, int minWeeksToMaturity, int maxWeeksToMaturity, boolean useOfferYield) {
-        return findTopByAnnualYieldAndMaturityRange(minWeeksToMaturity, maxWeeksToMaturity, useOfferYield, 50.0);
+        return findTopByAnnualYieldAndMaturityRange(minWeeksToMaturity, maxWeeksToMaturity, useOfferYield, 0.0, 50.0);
     }
 
 
-    public List<Bond> findTopByAnnualYieldAndMaturityRange(int minWeeksToMaturity, int maxWeeksToMaturity, boolean useOfferYield, double maxYield) {
+    public List<Bond> findTopByAnnualYieldAndMaturityRange(int minWeeksToMaturity, int maxWeeksToMaturity, boolean useOfferYield, double minYield, double maxYield) {
         if (!useOfferYield) {
             // Обычный режим - сортировка по annual_yield
-            String sql = "SELECT * FROM bonds WHERE annual_yield IS NOT NULL AND annual_yield <= " + maxYield + " " +
+            String sql = "SELECT * FROM bonds WHERE annual_yield IS NOT NULL AND annual_yield >= " + minYield + " AND annual_yield <= " + maxYield + " " +
                          "AND maturity_date IS NOT NULL " +
                          "AND maturity_date >= (CURRENT_DATE + INTERVAL '" + minWeeksToMaturity + " weeks') " +
                          "AND maturity_date <= (CURRENT_DATE + INTERVAL '" + maxWeeksToMaturity + " weeks') " +
@@ -102,8 +102,8 @@ public class BondRepository {
                      "  AND maturity_date IS NOT NULL " +
                      "  AND CASE " +
                      "    WHEN offer_date IS NOT NULL AND offer_date > CURRENT_DATE AND annual_yield_offer IS NOT NULL " +
-                     "    THEN annual_yield_offer <= " + maxYield + " " +
-                     "    ELSE annual_yield <= " + maxYield + " " +
+                     "    THEN annual_yield_offer >= " + minYield + " AND annual_yield_offer <= " + maxYield + " " +
+                     "    ELSE annual_yield >= " + minYield + " AND annual_yield <= " + maxYield + " " +
                      "  END " +
                      "  AND CASE " +
                      "    WHEN offer_date IS NOT NULL AND offer_date > CURRENT_DATE AND annual_yield_offer IS NOT NULL " +
