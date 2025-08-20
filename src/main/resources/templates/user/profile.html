@@ -175,6 +175,24 @@
             background: #138496;
         }
         
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-delete:hover {
+            background: #c82333;
+        }
+        
+        .btn-edit {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .btn-edit:hover {
+            background: #e0a800;
+        }
+        
         .status-badge {
             font-size: 11px;
             padding: 3px 8px;
@@ -247,7 +265,14 @@
             
             <div th:unless="${offerSubscriptions.empty}">
                 <div th:each="subscription : ${offerSubscriptions}" class="subscription-item">
-                    <h4 th:text="${subscription.isin}">RU000A0JX0J2</h4>
+                    <div class="subscription-header">
+                        <h4 th:text="${subscription.isin}">RU000A0JX0J2</h4>
+                        <div class="subscription-actions">
+                            <button class="btn-small btn-delete" th:onclick="'deleteOfferSubscription(' + ${subscription.id} + ')'">
+                                🗑️ Удалить
+                            </button>
+                        </div>
+                    </div>
                     <p>
                         <strong>Дата добавления:</strong> 
                         <span th:text="${#temporals.format(subscription.createdAt, 'dd.MM.yyyy HH:mm')}">01.01.2024 12:00</span>
@@ -265,16 +290,23 @@
             
             <div th:if="${ratingSubscriptions.empty}" class="empty-state">
                 <p>📊 У вас пока нет активных подписок на рейтинг облигаций.</p>
-                <p>Используйте кнопку "Подписка" на главной странице для создания подписки.</p>
+                <p>Используйте кнопку "Подписаться" на главной странице для создания подписки.</p>
             </div>
             
             <div th:unless="${ratingSubscriptions.empty}">
                 <div th:each="subscription : ${ratingSubscriptions}" class="subscription-item rating-subscription">
                     <div class="subscription-header">
-                        <h4 th:text="${subscription.name}">Название подписки</h4>
+                        <h4 th:text="${subscription.name}" 
+                            th:onclick="'editSubscriptionName(' + ${subscription.id} + ')'"
+                            style="cursor: pointer; user-select: none; border-bottom: 1px dashed #ccc;"
+                            th:title="'Нажмите для редактирования названия подписки'"
+                            th:id="'subscription-name-' + ${subscription.id}">Название подписки</h4>
                         <div class="subscription-actions">
                             <button class="btn-small btn-test" th:onclick="'sendSubscription(' + ${subscription.id} + ')'">
                                 🚀 Отправить
+                            </button>
+                            <button class="btn-small btn-delete" th:onclick="'deleteRatingSubscription(' + ${subscription.id} + ')'">
+                                🗑️ Удалить
                             </button>
                             <span th:if="${subscription.enabled}" class="status-badge status-active">Активна</span>
                             <span th:unless="${subscription.enabled}" class="status-badge status-inactive">Неактивна</span>
@@ -348,6 +380,127 @@
             .finally(() => {
                 button.textContent = originalText;
                 button.disabled = false;
+            });
+        }
+        
+        function deleteRatingSubscription(subscriptionId) {
+            if (!confirm("Вы уверены, что хотите удалить эту подписку на рейтинг?")) {
+                return;
+            }
+            
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = "⏳ Удаление...";
+            button.disabled = true;
+            
+            fetch(`/api/subscriptions/${subscriptionId}`, {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json",
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                return response.text().then(text => {
+                    throw new Error(text || "Ошибка при удалении");
+                });
+            })
+            .then(data => {
+                alert("Подписка успешно удалена!");
+                location.reload();
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("Ошибка при удалении: " + error.message);
+            })
+            .finally(() => {
+                button.textContent = originalText;
+                button.disabled = false;
+            });
+        }
+        
+        function deleteOfferSubscription(subscriptionId) {
+            if (!confirm("Вы уверены, что хотите удалить эту подписку на оферту?")) {
+                return;
+            }
+            
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = "⏳ Удаление...";
+            button.disabled = true;
+            
+            // TODO: Implement offer subscription deletion API
+            fetch(`/api/offer-subscriptions/${subscriptionId}`, {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json",
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                return response.text().then(text => {
+                    throw new Error(text || "Ошибка при удалении");
+                });
+            })
+            .then(data => {
+                alert("Подписка на оферту успешно удалена!");
+                location.reload();
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("Ошибка при удалении: " + error.message);
+            })
+            .finally(() => {
+                button.textContent = originalText;
+                button.disabled = false;
+            });
+        }
+        
+        function editSubscriptionName(subscriptionId) {
+            const nameElement = document.getElementById(`subscription-name-${subscriptionId}`);
+            const currentName = nameElement.textContent;
+            const newName = prompt("Введите новое название подписки:", currentName);
+            
+            if (newName === null || newName.trim() === "") {
+                return;
+            }
+            
+            if (newName.trim() === currentName) {
+                return; // No changes
+            }
+            
+            const originalText = nameElement.textContent;
+            nameElement.textContent = "⏳ Обновление...";
+            
+            fetch(`/api/subscriptions/${subscriptionId}`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    name: newName.trim()
+                })
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                return response.text().then(text => {
+                    throw new Error(text || "Ошибка при обновлении");
+                });
+            })
+            .then(data => {
+                nameElement.textContent = newName.trim();
+                alert("Название подписки успешно обновлено!");
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                nameElement.textContent = originalText;
+                alert("Ошибка при обновлении: " + error.message);
             });
         }
     </script>

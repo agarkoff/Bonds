@@ -147,6 +147,14 @@ public class RatingSubscriptionRepository {
     }
 
     /**
+     * Обновляет название подписки
+     */
+    public void updateName(Long subscriptionId, String newName) {
+        String sql = "UPDATE rating_subscription SET name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+        jdbcTemplate.update(sql, newName, subscriptionId);
+    }
+
+    /**
      * Удаляет подписку
      */
     public boolean deleteById(Long id) {

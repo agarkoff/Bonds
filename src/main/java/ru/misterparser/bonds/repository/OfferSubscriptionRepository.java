@@ -78,6 +78,19 @@ public class OfferSubscriptionRepository {
     }
 
     /**
+     * Находит подписку по ID
+     */
+    public Optional<OfferSubscription> findById(Long id) {
+        String sql = "SELECT * FROM offer_subscription WHERE id = ?";
+        try {
+            OfferSubscription subscription = jdbcTemplate.queryForObject(sql, subscriptionRowMapper, id);
+            return Optional.ofNullable(subscription);
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+    }
+
+    /**
      * Проверяет, подписан ли пользователь на ISIN
      */
     public boolean isSubscribed(Long chatId, String isin) {

@@ -237,4 +237,50 @@ public class SubscriptionController {
                 .body(Map.of("error", "Ошибка при отправке уведомлений"));
         }
     }
+
+    /**
+     * Обновляет название подписки
+     */
+    @PatchMapping("/{id}")
+    public ResponseEntity<?> updateSubscription(@PathVariable Long id, 
+                                               @RequestBody Map<String, String> updateData,
+                                               Authentication authentication) {
+        try {
+            TelegramUser currentUser = telegramAuthService.getCurrentUser(authentication);
+            if (currentUser == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Пользователь не авторизован"));
+            }
+
+            Optional<RatingSubscription> subscription = subscriptionRepository.findById(id);
+            if (subscription.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            // Проверяем, что подписка принадлежит текущему пользователю
+            if (!subscription.get().getTelegramUserId().equals(currentUser.getId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Доступ запрещен"));
+            }
+
+            String newName = updateData.get("name");
+            if (newName == null || newName.trim().isEmpty()) {
+                return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Название подписки не может быть пустым"));
+            }
+
+            // Обновляем название
+            subscriptionRepository.updateName(id, newName.trim());
+            
+            logger.info("Обновлено название подписки для пользователя {}: {} -> {}", 
+                       currentUser.getId(), subscription.get().getName(), newName.trim());
+
+            return ResponseEntity.ok(Map.of("message", "Название подписки обновлено", "name", newName.trim()));
+
+        } catch (Exception e) {
+            logger.error("Ошибка при обновлении подписки", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Ошибка при обновлении подписки"));
+        }
+    }
 }
