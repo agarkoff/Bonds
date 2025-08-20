@@ -193,6 +193,67 @@
             background: #e0a800;
         }
         
+        .editable-name {
+            cursor: pointer;
+            user-select: none;
+            border-bottom: 1px dashed #ccc;
+            padding: 2px;
+            border-radius: 3px;
+            transition: background-color 0.2s;
+        }
+        
+        .editable-name:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .edit-input {
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            outline: none;
+            box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+            margin: 0;
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .save-cancel-buttons {
+            margin-top: 8px;
+            display: flex;
+            gap: 8px;
+        }
+        
+        .btn-tiny {
+            padding: 3px 8px;
+            font-size: 11px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .btn-save {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-save:hover {
+            background: #218838;
+        }
+        
+        .btn-cancel {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-cancel:hover {
+            background: #5a6268;
+        }
+        
         .status-badge {
             font-size: 11px;
             padding: 3px 8px;
@@ -296,11 +357,20 @@
             <div th:unless="${ratingSubscriptions.empty}">
                 <div th:each="subscription : ${ratingSubscriptions}" class="subscription-item rating-subscription">
                     <div class="subscription-header">
-                        <h4 th:text="${subscription.name}" 
-                            th:onclick="'editSubscriptionName(' + ${subscription.id} + ')'"
-                            style="cursor: pointer; user-select: none; border-bottom: 1px dashed #ccc;"
-                            th:title="'Нажмите для редактирования названия подписки'"
-                            th:id="'subscription-name-' + ${subscription.id}">Название подписки</h4>
+                        <h4 th:id="'subscription-name-' + ${subscription.id}">
+                            <span class="editable-name" 
+                                  th:onclick="'editSubscriptionName(' + ${subscription.id} + ')'"
+                                  th:title="'Нажмите для редактирования названия подписки'"
+                                  th:id="'name-text-' + ${subscription.id}" 
+                                  th:text="${subscription.name}">Название подписки</span>
+                            <div th:id="'name-edit-' + ${subscription.id}" style="display: none;">
+                                <input type="text" class="edit-input" th:id="'name-input-' + ${subscription.id}" th:value="${subscription.name}" onclick="event.stopPropagation();">
+                                <div class="save-cancel-buttons" onclick="event.stopPropagation();">
+                                    <button class="btn-tiny btn-save" th:onclick="'saveSubscriptionName(' + ${subscription.id} + ')'">Сохранить</button>
+                                    <button class="btn-tiny btn-cancel" th:onclick="'cancelEditName(' + ${subscription.id} + ')'">Отмена</button>
+                                </div>
+                            </div>
+                        </h4>
                         <div class="subscription-actions">
                             <button class="btn-small btn-test" th:onclick="'sendSubscription(' + ${subscription.id} + ')'">
                                 🚀 Отправить
@@ -461,20 +531,41 @@
         }
         
         function editSubscriptionName(subscriptionId) {
-            const nameElement = document.getElementById(`subscription-name-${subscriptionId}`);
-            const currentName = nameElement.textContent;
-            const newName = prompt("Введите новое название подписки:", currentName);
+            const textElement = document.getElementById(`name-text-${subscriptionId}`);
+            const editElement = document.getElementById(`name-edit-${subscriptionId}`);
+            const inputElement = document.getElementById(`name-input-${subscriptionId}`);
             
-            if (newName === null || newName.trim() === "") {
+            // Переключаемся в режим редактирования
+            textElement.style.display = 'none';
+            editElement.style.display = 'block';
+            
+            // Фокусируемся на input и выделяем текст
+            inputElement.focus();
+            inputElement.select();
+        }
+        
+        function saveSubscriptionName(subscriptionId) {
+            console.log('saveSubscriptionName called with id:', subscriptionId);
+            
+            const textElement = document.getElementById(`name-text-${subscriptionId}`);
+            const editElement = document.getElementById(`name-edit-${subscriptionId}`);
+            const inputElement = document.getElementById(`name-input-${subscriptionId}`);
+            const saveButton = editElement.querySelector('.btn-save');
+            
+            console.log('Elements found:', {textElement, editElement, inputElement, saveButton});
+            
+            const newName = inputElement.value.trim();
+            const currentName = textElement.textContent.trim();
+            
+            if (newName === "" || newName === currentName) {
+                cancelEditName(subscriptionId);
                 return;
             }
             
-            if (newName.trim() === currentName) {
-                return; // No changes
-            }
-            
-            const originalText = nameElement.textContent;
-            nameElement.textContent = "⏳ Обновление...";
+            // Показываем состояние загрузки
+            const originalSaveText = saveButton.textContent;
+            saveButton.textContent = "⏳";
+            saveButton.disabled = true;
             
             fetch(`/api/subscriptions/${subscriptionId}`, {
                 method: "PATCH",
@@ -482,7 +573,7 @@
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    name: newName.trim()
+                    name: newName
                 })
             })
             .then(response => {
@@ -494,15 +585,48 @@
                 });
             })
             .then(data => {
-                nameElement.textContent = newName.trim();
-                alert("Название подписки успешно обновлено!");
+                // Обновляем текст и возвращаемся в режим просмотра
+                textElement.textContent = newName;
+                textElement.style.display = '';
+                editElement.style.display = 'none';
             })
             .catch(error => {
                 console.error("Error:", error);
-                nameElement.textContent = originalText;
                 alert("Ошибка при обновлении: " + error.message);
+            })
+            .finally(() => {
+                saveButton.textContent = originalSaveText;
+                saveButton.disabled = false;
             });
         }
+        
+        function cancelEditName(subscriptionId) {
+            console.log('cancelEditName called with id:', subscriptionId);
+            
+            const textElement = document.getElementById(`name-text-${subscriptionId}`);
+            const editElement = document.getElementById(`name-edit-${subscriptionId}`);
+            const inputElement = document.getElementById(`name-input-${subscriptionId}`);
+            
+            // Восстанавливаем исходное значение и переключаемся в режим просмотра
+            inputElement.value = textElement.textContent;
+            textElement.style.display = '';
+            editElement.style.display = 'none';
+        }
+        
+        // Обработчик для сохранения по Enter и отмены по Escape
+        document.addEventListener('keydown', function(event) {
+            if (event.target.classList.contains('edit-input')) {
+                const subscriptionId = event.target.id.match(/name-input-(\d+)/)[1];
+                
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    saveSubscriptionName(subscriptionId);
+                } else if (event.key === 'Escape') {
+                    event.preventDefault();
+                    cancelEditName(subscriptionId);
+                }
+            }
+        });
     </script>
 </body>
 </html>
