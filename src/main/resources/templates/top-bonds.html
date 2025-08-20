@@ -279,7 +279,7 @@
                     </div>
                     <div sec:authorize="isAuthenticated()" style="font-size: 14px;">
                         <button onclick="createSubscription()" style="margin-right: 10px;">🔔 Подписаться</button>
-                        <a th:href="@{/user/profile}" style="margin-right: 10px;">👤 <span sec:authentication="principal.name">Профиль</span></a>
+                        <a th:href="@{/user/profile}" style="margin-right: 10px;">👤 <span th:text="${@securityUtils.getCurrentUserDisplayName()}">Профиль</span></a>
                         <form th:action="@{/logout}" method="post" style="display: inline;">
                             <button type="submit">🚪 Выход</button>
                         </form>

@@ -153,3 +153,14 @@ CREATE INDEX idx_rating_subscription_telegram_user_id ON rating_subscription(tel
 CREATE INDEX idx_rating_subscription_enabled ON rating_subscription(enabled);
 CREATE INDEX idx_rating_subscription_last_sent_at ON rating_subscription(last_sent_at);
 CREATE INDEX idx_rating_subscription_next_send ON rating_subscription(enabled, last_sent_at, period_hours);
+
+--changeset bonds:12
+CREATE TABLE IF NOT EXISTS persistent_logins (
+    username VARCHAR(64) NOT NULL,
+    series VARCHAR(64) PRIMARY KEY,
+    token VARCHAR(64) NOT NULL,
+    last_used TIMESTAMP NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_persistent_logins_username ON persistent_logins(username);
+CREATE INDEX IF NOT EXISTS idx_persistent_logins_last_used ON persistent_logins(last_used);

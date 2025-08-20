@@ -5,11 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import ru.misterparser.bonds.model.TelegramUser;
 import ru.misterparser.bonds.repository.TelegramUserRepository;
+import ru.misterparser.bonds.security.TelegramUserDetails;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -145,16 +145,11 @@ public class TelegramAuthService {
      * Аутентифицирует пользователя в Spring Security
      */
     public void authenticateUser(TelegramUser telegramUser) {
-        List<SimpleGrantedAuthority> authorities = Arrays.asList(
-            new SimpleGrantedAuthority("ROLE_USER"),
-            new SimpleGrantedAuthority("ROLE_TELEGRAM_USER")
-        );
-        
-        // Создаем principal с данными пользователя
-        TelegramUserPrincipal principal = new TelegramUserPrincipal(telegramUser);
+        // Создаем UserDetails для пользователя
+        TelegramUserDetails userDetails = TelegramUserDetails.create(telegramUser);
         
         UsernamePasswordAuthenticationToken authentication = 
-            new UsernamePasswordAuthenticationToken(principal, null, authorities);
+            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
         
         SecurityContextHolder.getContext().setAuthentication(authentication);
         
@@ -196,38 +191,10 @@ public class TelegramAuthService {
         }
         
         Object principal = authentication.getPrincipal();
-        if (principal instanceof TelegramUserPrincipal) {
-            return ((TelegramUserPrincipal) principal).getTelegramUser();
+        if (principal instanceof TelegramUserDetails) {
+            return ((TelegramUserDetails) principal).getTelegramUser();
         }
         
         return null;
-    }
-    
-    /**
-     * Principal класс для Telegram пользователей
-     */
-    public static class TelegramUserPrincipal {
-        private final TelegramUser telegramUser;
-        
-        public TelegramUserPrincipal(TelegramUser telegramUser) {
-            this.telegramUser = telegramUser;
-        }
-        
-        public TelegramUser getTelegramUser() {
-            return telegramUser;
-        }
-        
-        public String getName() {
-            return telegramUser.getDisplayName();
-        }
-        
-        public Long getTelegramId() {
-            return telegramUser.getTelegramId();
-        }
-        
-        @Override
-        public String toString() {
-            return getName();
-        }
     }
 }

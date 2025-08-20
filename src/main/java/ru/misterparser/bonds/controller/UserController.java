@@ -12,7 +12,7 @@ import ru.misterparser.bonds.model.RatingSubscription;
 import ru.misterparser.bonds.model.TelegramUser;
 import ru.misterparser.bonds.repository.OfferSubscriptionRepository;
 import ru.misterparser.bonds.repository.RatingSubscriptionRepository;
-import ru.misterparser.bonds.service.TelegramAuthService;
+import ru.misterparser.bonds.security.TelegramUserDetails;
 
 import java.util.List;
 
@@ -28,10 +28,9 @@ public class UserController {
     public String profile(Model model) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         
-        if (authentication != null && authentication.getPrincipal() instanceof TelegramAuthService.TelegramUserPrincipal) {
-            TelegramAuthService.TelegramUserPrincipal principal = 
-                (TelegramAuthService.TelegramUserPrincipal) authentication.getPrincipal();
-            TelegramUser telegramUser = principal.getTelegramUser();
+        if (authentication != null && authentication.getPrincipal() instanceof TelegramUserDetails) {
+            TelegramUserDetails userDetails = (TelegramUserDetails) authentication.getPrincipal();
+            TelegramUser telegramUser = userDetails.getTelegramUser();
             
             // Получаем подписки пользователя
             List<OfferSubscription> offerSubscriptions = 
@@ -50,6 +49,6 @@ public class UserController {
         }
         
         // Если пользователь не авторизован через Telegram, перенаправляем на логин
-        return "redirect:/login";
+        return "redirect:/telegram-login";
     }
 }
