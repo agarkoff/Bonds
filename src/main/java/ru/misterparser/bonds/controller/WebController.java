@@ -23,8 +23,7 @@ public class WebController {
 
     @GetMapping("/")
     public String topBonds(@RequestParam(defaultValue = "50") int limit,
-                          @RequestParam(defaultValue = "0") int minWeeksToMaturity,
-                          @RequestParam(defaultValue = "26") int maxWeeksToMaturity,
+                          @RequestParam(defaultValue = "0-26") String weeksToMaturity,
                           @RequestParam(defaultValue = "false") boolean showOffer,
                           @RequestParam(defaultValue = "") String searchText,
                           @RequestParam(defaultValue = "0.30") double feePercent,
@@ -32,8 +31,31 @@ public class WebController {
                           @RequestParam(defaultValue = "50") double maxYield,
                           Model model) {
         try {
-            logger.info("Loading top bonds page with limit: {}, minWeeks: {}, maxWeeks: {}, showOffer: {}, searchText: '{}', feePercent: {}, minYield: {}, maxYield: {}", 
-                       limit, minWeeksToMaturity, maxWeeksToMaturity, showOffer, searchText, feePercent, minYield, maxYield);
+            // Парсим параметр weeksToMaturity
+            int minWeeksToMaturity;
+            int maxWeeksToMaturity;
+            
+            if (weeksToMaturity.contains("-")) {
+                String[] parts = weeksToMaturity.split("-", 2);
+                try {
+                    minWeeksToMaturity = Integer.parseInt(parts[0].trim());
+                    maxWeeksToMaturity = Integer.parseInt(parts[1].trim());
+                } catch (NumberFormatException e) {
+                    minWeeksToMaturity = 0;
+                    maxWeeksToMaturity = 26;
+                }
+            } else {
+                try {
+                    minWeeksToMaturity = 0;
+                    maxWeeksToMaturity = Integer.parseInt(weeksToMaturity.trim());
+                } catch (NumberFormatException e) {
+                    minWeeksToMaturity = 0;
+                    maxWeeksToMaturity = 26;
+                }
+            }
+            
+            logger.info("Loading top bonds page with limit: {}, weeksToMaturity: '{}' (parsed: {}-{}), showOffer: {}, searchText: '{}', feePercent: {}, minYield: {}, maxYield: {}", 
+                       limit, weeksToMaturity, minWeeksToMaturity, maxWeeksToMaturity, showOffer, searchText, feePercent, minYield, maxYield);
             
             // Создаём параметры фильтрации  
             BondFilteringService.FilterParams params = new BondFilteringService.FilterParams();
@@ -52,6 +74,7 @@ public class WebController {
             model.addAttribute("bonds", bonds);
             model.addAttribute("totalBonds", bonds.size());
             model.addAttribute("limit", limit);
+            model.addAttribute("weeksToMaturity", weeksToMaturity);
             model.addAttribute("minWeeksToMaturity", minWeeksToMaturity);
             model.addAttribute("maxWeeksToMaturity", maxWeeksToMaturity);
             model.addAttribute("showOffer", showOffer);
