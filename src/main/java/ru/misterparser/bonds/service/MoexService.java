@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.misterparser.bonds.config.MoexConfig;
 import ru.misterparser.bonds.model.MoexBond;
 import ru.misterparser.bonds.repository.MoexBondRepository;
@@ -37,6 +38,7 @@ public class MoexService {
     @Autowired
     private MoexBondRepository moexBondRepository;
 
+    @Transactional
     public void parseBonds() {
         if (!moexConfig.isEnabled()) {
             logger.info("MOEX parsing is disabled");

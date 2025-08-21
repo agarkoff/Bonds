@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.misterparser.bonds.config.CalcConfig;
 import ru.misterparser.bonds.model.Bond;
 import ru.misterparser.bonds.repository.BondRepository;
@@ -29,6 +30,7 @@ public class CalculationService {
     @Autowired
     private BondRepository bondRepository;
 
+    @Transactional
     public void calculateAllBonds() {
         logger.info("Starting calculation for all bonds");
 
@@ -66,6 +68,7 @@ public class CalculationService {
         }
     }
 
+    @Transactional
     public void calculateBond(String isin) {
         logger.info("Starting calculation for bond: {}", isin);
 

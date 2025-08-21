@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.misterparser.bonds.model.Bond;
 import ru.misterparser.bonds.model.RatingSubscription;
 import ru.misterparser.bonds.model.TelegramUser;
@@ -45,6 +46,7 @@ public class RatingNotificationService {
     /**
      * Обрабатывает все подписки на рейтинг и отправляет уведомления
      */
+    @Transactional
     public void processRatingSubscriptions() {
         logger.info("Начинаем обработку подписок на рейтинг...");
         
@@ -67,6 +69,7 @@ public class RatingNotificationService {
     /**
      * Отправляет уведомление по конкретной подписке
      */
+    @Transactional
     public void sendSubscriptionNotification(RatingSubscription subscription, boolean forceMode) {
         try {
             // Получаем пользователя

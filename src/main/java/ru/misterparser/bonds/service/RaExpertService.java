@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.misterparser.bonds.config.RaExpertConfig;
 import ru.misterparser.bonds.model.Rating;
 import ru.misterparser.bonds.repository.BondRepository;
@@ -50,6 +51,7 @@ public class RaExpertService {
     @Autowired
     private BondRepository bondRepository;
 
+    @Transactional
     public void updateRatings() {
         if (!raExpertConfig.isEnabled()) {
             logger.info("RaExpert ratings update is disabled");

@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.misterparser.bonds.model.Bond;
 import ru.misterparser.bonds.model.OfferSubscription;
 import ru.misterparser.bonds.repository.BondRepository;
@@ -35,6 +36,7 @@ public class OfferNotificationScheduler {
      * Отправляет ежедневные уведомления в 9:00 МСК
      */
     @Scheduled(cron = "0 0 9 * * ?", zone = "Europe/Moscow")
+    @Transactional
     public void sendDailyOfferNotifications() {
         logger.info("Запуск ежедневной отправки уведомлений о приближающихся офертах");
 
@@ -86,6 +88,7 @@ public class OfferNotificationScheduler {
     /**
      * Тестовый метод для ручного запуска уведомлений (можно вызвать через API)
      */
+    @Transactional
     public void sendTestNotifications() {
         logger.info("Запуск тестовой отправки уведомлений");
         sendDailyOfferNotifications();
