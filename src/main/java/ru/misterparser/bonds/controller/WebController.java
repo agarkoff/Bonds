@@ -27,8 +27,7 @@ public class WebController {
                           @RequestParam(defaultValue = "false") boolean showOffer,
                           @RequestParam(defaultValue = "") String searchText,
                           @RequestParam(defaultValue = "0.30") double feePercent,
-                          @RequestParam(defaultValue = "0") double minYield,
-                          @RequestParam(defaultValue = "50") double maxYield,
+                          @RequestParam(defaultValue = "0-50") String yieldRange,
                           Model model) {
         try {
             // Парсим параметр weeksToMaturity
@@ -54,8 +53,39 @@ public class WebController {
                 }
             }
             
-            logger.info("Loading top bonds page with limit: {}, weeksToMaturity: '{}' (parsed: {}-{}), showOffer: {}, searchText: '{}', feePercent: {}, minYield: {}, maxYield: {}", 
-                       limit, weeksToMaturity, minWeeksToMaturity, maxWeeksToMaturity, showOffer, searchText, feePercent, minYield, maxYield);
+            // Парсим параметр yieldRange
+            double minYield;
+            double maxYield;
+            
+            if (yieldRange.contains("-")) {
+                String[] parts = yieldRange.split("-", 2);
+                try {
+                    minYield = Double.parseDouble(parts[0].trim());
+                    maxYield = Double.parseDouble(parts[1].trim());
+                    // Проверяем что разница больше 0
+                    if (maxYield <= minYield) {
+                        minYield = 0;
+                        maxYield = 50;
+                    }
+                } catch (NumberFormatException e) {
+                    minYield = 0;
+                    maxYield = 50;
+                }
+            } else {
+                try {
+                    minYield = 0;
+                    maxYield = Double.parseDouble(yieldRange.trim());
+                    if (maxYield <= 0) {
+                        maxYield = 50;
+                    }
+                } catch (NumberFormatException e) {
+                    minYield = 0;
+                    maxYield = 50;
+                }
+            }
+            
+            logger.info("Loading top bonds page with limit: {}, weeksToMaturity: '{}' (parsed: {}-{}), showOffer: {}, searchText: '{}', feePercent: {}, yieldRange: '{}' (parsed: {}-{})", 
+                       limit, weeksToMaturity, minWeeksToMaturity, maxWeeksToMaturity, showOffer, searchText, feePercent, yieldRange, minYield, maxYield);
             
             // Создаём параметры фильтрации  
             BondFilteringService.FilterParams params = new BondFilteringService.FilterParams();
@@ -80,6 +110,7 @@ public class WebController {
             model.addAttribute("showOffer", showOffer);
             model.addAttribute("searchText", searchText);
             model.addAttribute("feePercent", feePercent);
+            model.addAttribute("yieldRange", yieldRange);
             model.addAttribute("minYield", minYield);
             model.addAttribute("maxYield", maxYield);
             

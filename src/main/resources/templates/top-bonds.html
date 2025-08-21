@@ -179,6 +179,10 @@
             width: 100px;
         }
         
+        .form-group input#yieldRange {
+            width: 100px;
+        }
+        
         .form-group input[type="checkbox"] {
             margin-right: 5px;
         }
@@ -308,12 +312,8 @@
                     <input type="number" id="feePercent" name="feePercent" th:value="${feePercent}" min="0" max="5" step="0.01" placeholder="0.30">
                 </div>
                 <div class="form-group">
-                    <label for="minYield">Мин. доходность %:</label>
-                    <input type="number" id="minYield" name="minYield" th:value="${minYield}" min="0" step="1" placeholder="0">
-                </div>
-                <div class="form-group">
-                    <label for="maxYield">Макс. доходность %:</label>
-                    <input type="number" id="maxYield" name="maxYield" th:value="${maxYield}" min="1" step="1" placeholder="50">
+                    <label for="yieldRange">Доходность %:</label>
+                    <input type="text" id="yieldRange" name="yieldRange" th:value="${yieldRange}" placeholder="0-50 или 50">
                 </div>
                 <div class="form-group">
                     <label for="searchText">Тикер/название:</label>
@@ -612,8 +612,26 @@
             const form = document.querySelector('form[method="get"]');
             const formData = new FormData(form);
             
-            const minYield = formData.get('minYield') ? parseFloat(formData.get('minYield')) : 0;
-            const maxYield = formData.get('maxYield') ? parseFloat(formData.get('maxYield')) : 50;
+            // Parse yieldRange parameter
+            const yieldRange = formData.get("yieldRange") || "0-50";
+            let minYield, maxYield;
+            
+            if (yieldRange.includes("-")) {
+                const parts = yieldRange.split("-");
+                minYield = parseFloat(parts[0].trim()) || 0;
+                maxYield = parseFloat(parts[1].trim()) || 50;
+                // Ensure maxYield > minYield
+                if (maxYield <= minYield) {
+                    minYield = 0;
+                    maxYield = 50;
+                }
+            } else {
+                minYield = 0;
+                maxYield = parseFloat(yieldRange.trim()) || 50;
+                if (maxYield <= 0) {
+                    maxYield = 50;
+                }
+            }
             // Parse weeksToMaturity parameter
             const weeksToMaturity = formData.get('weeksToMaturity') || '0-26';
             let minWeeks, maxWeeks;
