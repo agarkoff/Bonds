@@ -38,7 +38,7 @@ public class ApiController {
     @Autowired
     private BondRepository bondRepository;
 
-    @PostMapping("/moex/parse")
+    @PostMapping("/moex/bonds/parse")  
     public ResponseEntity<String> parseMoex() {
         logger.info("Manual MOEX parsing triggered");
         try {
