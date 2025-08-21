@@ -140,43 +140,34 @@ public class MoexService {
             try {
                 MoexBond bond = parseRow(row, columnIndexes);
                 if (bond != null && bond.getIsin() != null) {
-                    moexBondRepository.saveOrUpdate(bond);
-                    successful++;
-                    logger.debug("Processed bond: {}", bond.getIsin());
+                    // Валидация parsed bond
+                    ValidationResult validation = validateBond(bond);
+                    if (validation.isValid()) {
+                        moexBondRepository.saveOrUpdate(bond);
+                        successful++;
+                        logger.debug("Processed bond: {}", bond.getIsin());
+                    } else {
+                        // Определяем тип ошибки валидации для статистики
+                        String reason = validation.getReason();
+                        if (reason.contains("дата погашения")) {
+                            skippedNoMaturityDate++;
+                        } else {
+                            skippedNoCoupon++;
+                        }
+                        logger.info("Облигация {} пропущена: {}", validation.getIsin(), reason);
+                    }
                 } else {
-                    // Проверим причину пропуска записи
+                    // Проверим причину пропуска записи (null bond)
                     String isin = getValue(row, columnIndexes, "ISIN");
                     String faceUnit = getValue(row, columnIndexes, "FACEUNIT");
-                    String couponValueStr = getValue(row, columnIndexes, "COUPONVALUE");
                     
                     if (isin != null && !isin.trim().isEmpty()) {
                         if (!"RUB".equals(faceUnit)) {
                             filtered++;
                             logger.debug("Filtered non-RUB bond: {} ({})", isin, faceUnit);
                         } else {
-                            String couponFrequencyStr = getValue(row, columnIndexes, "COUPONFREQUENCY");
-                            String couponDaysPassedStr = getValue(row, columnIndexes, "COUPONDAYSPASSED");
-                            String maturityDateStr = getValue(row, columnIndexes, "MATDATE");
-                            
-                            boolean noCouponValue = couponValueStr == null || couponValueStr.trim().isEmpty() || parseBigDecimal(couponValueStr) == null;
-                            boolean noCouponFrequency = couponFrequencyStr == null || couponFrequencyStr.trim().isEmpty() || parseInt(couponFrequencyStr) == null;
-                            boolean noCouponDaysPassed = couponDaysPassedStr == null || couponDaysPassedStr.trim().isEmpty() || parseInt(couponDaysPassedStr) == null;
-                            boolean noMaturityDate = maturityDateStr == null || maturityDateStr.trim().isEmpty() || parseDate(maturityDateStr) == null;
-                            
-                            if (noCouponValue || noCouponFrequency || noCouponDaysPassed) {
-                                skippedNoCoupon++;
-                                String missingFields = "";
-                                if (noCouponValue) missingFields += "value ";
-                                if (noCouponFrequency) missingFields += "frequency ";
-                                if (noCouponDaysPassed) missingFields += "days ";
-                                logger.debug("Skipped bond without coupon {}: {}", missingFields.trim(), isin);
-                            } else if (noMaturityDate) {
-                                skippedNoMaturityDate++;
-                                logger.debug("Skipped bond without maturity date: {}", isin);
-                            } else {
-                                errors++;
-                                logger.debug("Skipped invalid bond: {}", isin);
-                            }
+                            errors++;
+                            logger.debug("Skipped invalid bond: {}", isin);
                         }
                     } else {
                         errors++;
@@ -222,6 +213,70 @@ public class MoexService {
         return columnIndexes;
     }
 
+    /**
+     * Валидирует обязательные поля облигации согласно требованиям moex.md
+     */
+    private ValidationResult validateBond(MoexBond bond) {
+        if (bond == null || bond.getIsin() == null || bond.getIsin().trim().isEmpty()) {
+            return ValidationResult.invalid("ISIN пустой или отсутствует");
+        }
+        
+        String isin = bond.getIsin();
+        
+        // Валидация размера купона - обязательное поле
+        if (bond.getCouponValue() == null) {
+            return ValidationResult.invalid("размер купона не задан", isin);
+        }
+        
+        // Валидация частоты купона - обязательное поле
+        if (bond.getCouponFrequency() == null) {
+            return ValidationResult.invalid("частота купона не задана", isin);
+        }
+        
+        // Валидация дней с последнего купона - обязательное поле
+        if (bond.getCouponDaysPassed() == null) {
+            return ValidationResult.invalid("дни с последнего купона не заданы", isin);
+        }
+        
+        // Валидация даты погашения - обязательное поле
+        if (bond.getMaturityDate() == null) {
+            return ValidationResult.invalid("дата погашения не задана", isin);
+        }
+        
+        return ValidationResult.valid();
+    }
+    
+    /**
+     * Класс для результата валидации
+     */
+    private static class ValidationResult {
+        private final boolean valid;
+        private final String reason;
+        private final String isin;
+        
+        private ValidationResult(boolean valid, String reason, String isin) {
+            this.valid = valid;
+            this.reason = reason;
+            this.isin = isin;
+        }
+        
+        public static ValidationResult valid() {
+            return new ValidationResult(true, null, null);
+        }
+        
+        public static ValidationResult invalid(String reason) {
+            return new ValidationResult(false, reason, null);
+        }
+        
+        public static ValidationResult invalid(String reason, String isin) {
+            return new ValidationResult(false, reason, isin);
+        }
+        
+        public boolean isValid() { return valid; }
+        public String getReason() { return reason; }
+        public String getIsin() { return isin; }
+    }
+
     private MoexBond parseRow(String[] row, Map<String, Integer> columnIndexes) {
         try {
             String isin = getValue(row, columnIndexes, "ISIN");
@@ -240,49 +295,15 @@ public class MoexService {
             bond.setIsin(isin.trim());
             bond.setShortName(getValue(row, columnIndexes, "SHORTNAME"));
             
-            // Парсинг числовых значений
-            BigDecimal couponValue = parseBigDecimal(getValue(row, columnIndexes, "COUPONVALUE"));
-            
-            // Валидация размера купона - обязательное поле
-            if (couponValue == null) {
-                logger.info("Облигация {} пропущена: размер купона не задан", isin);
-                return null;
-            }
-            
-            bond.setCouponValue(couponValue);
+            // Парсинг числовых значений без валидации
+            bond.setCouponValue(parseBigDecimal(getValue(row, columnIndexes, "COUPONVALUE")));
             bond.setFaceValue(parseBigDecimal(getValue(row, columnIndexes, "FACEVALUE")));
-            
-            Integer couponFrequency = parseInt(getValue(row, columnIndexes, "COUPONFREQUENCY"));
-            
-            // Валидация частоты купона - обязательное поле
-            if (couponFrequency == null) {
-                logger.info("Облигация {} пропущена: частота купона не задана", isin);
-                return null;
-            }
-            
-            bond.setCouponFrequency(couponFrequency);
+            bond.setCouponFrequency(parseInt(getValue(row, columnIndexes, "COUPONFREQUENCY")));
             bond.setCouponLength(parseInt(getValue(row, columnIndexes, "COUPONLENGTH")));
+            bond.setCouponDaysPassed(parseInt(getValue(row, columnIndexes, "COUPONDAYSPASSED")));
             
-            Integer couponDaysPassed = parseInt(getValue(row, columnIndexes, "COUPONDAYSPASSED"));
-            
-            // Валидация дней с последнего купона - обязательное поле
-            if (couponDaysPassed == null) {
-                logger.info("Облигация {} пропущена: дни с последнего купона не заданы", isin);
-                return null;
-            }
-            
-            bond.setCouponDaysPassed(couponDaysPassed);
-            
-            // Парсинг даты в формате dd.mm.yyyy
-            LocalDate maturityDate = parseDate(getValue(row, columnIndexes, "MATDATE"));
-            
-            // Валидация даты погашения - обязательное поле
-            if (maturityDate == null) {
-                logger.info("Облигация {} пропущена: дата погашения не задана", isin);
-                return null;
-            }
-            
-            bond.setMaturityDate(maturityDate);
+            // Парсинг дат
+            bond.setMaturityDate(parseDate(getValue(row, columnIndexes, "MATDATE")));
             bond.setOfferDate(parseDate(getValue(row, columnIndexes, "OFFERDATE")));
             
             return bond;
