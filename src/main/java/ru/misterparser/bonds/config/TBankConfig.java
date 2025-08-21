@@ -6,15 +6,15 @@ import org.springframework.context.annotation.Configuration;
 @Configuration("tBankConfig")
 @ConfigurationProperties(prefix = "sources.bonds.tbank")
 public class TBankConfig {
-    private boolean enabled = true;
-    private String apiUrl = "https://invest-public-api.tinkoff.ru/rest";
+    private boolean enabled;
+    private String apiUrl;
     private String token;
-    private int rateLimit = 60;
+    private int rateLimit;
     private InstrumentsConfig instruments = new InstrumentsConfig();
     private MarketDataConfig marketdata = new MarketDataConfig();
 
     public static class InstrumentsConfig {
-        private String cron = "0 0 2 * * *";
+        private String cron;
 
         public String getCron() {
             return cron;
@@ -26,7 +26,7 @@ public class TBankConfig {
     }
 
     public static class MarketDataConfig {
-        private String cron = "0 */15 9-18 * * MON-FRI";
+        private String cron;
 
         public String getCron() {
             return cron;

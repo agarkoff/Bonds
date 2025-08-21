@@ -51,6 +51,12 @@ sources:
       delays:
         page-interval: 30
         request-timeout: 30
+    dohod:
+      enabled: true
+      cron: "0 0 2 * * SUN"
+      delays:
+        page-interval: 3
+        request-timeout: 30
 
 # Расчеты
 calc:

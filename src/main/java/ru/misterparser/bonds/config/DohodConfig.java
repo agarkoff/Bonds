@@ -6,13 +6,13 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties(prefix = "sources.ratings.dohod")
 public class DohodConfig {
-    private boolean enabled = true;
-    private String cron = "0 0 2 * * SUN";
+    private boolean enabled;
+    private String cron;
     private DelaysConfig delays = new DelaysConfig();
 
     public static class DelaysConfig {
-        private int pageInterval = 3;
-        private int requestTimeout = 30;
+        private int pageInterval;
+        private int requestTimeout;
 
         public int getPageInterval() {
             return pageInterval;

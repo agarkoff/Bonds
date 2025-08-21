@@ -8,11 +8,11 @@ import java.math.BigDecimal;
 @Configuration
 @ConfigurationProperties(prefix = "calc")
 public class CalcConfig {
-    private int periodMinutes = 30;
-    private BigDecimal ndfl = new BigDecimal("13");
-    private int precision = 8;
-    private int minDaysToMaturity = 1;
-    private BigDecimal maxYield = new BigDecimal("50");
+    private int periodMinutes;
+    private BigDecimal ndfl;
+    private int precision;
+    private int minDaysToMaturity;
+    private BigDecimal maxYield;
 
     public int getPeriodMinutes() {
         return periodMinutes;

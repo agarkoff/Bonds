@@ -6,11 +6,11 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties(prefix = "sources.bonds.moex")
 public class MoexConfig {
-    private boolean enabled = true;
-    private String source = "url";
-    private String csvUrl = "https://iss.moex.com/iss/engines/stock/markets/bonds/securities.csv?iss.meta=off";
-    private String fallbackFile = "docs/rates.csv";
-    private String cron = "0 0 11 * * MON-FRI";
+    private boolean enabled;
+    private String source;
+    private String csvUrl;
+    private String fallbackFile;
+    private String cron;
 
     public boolean isEnabled() {
         return enabled;

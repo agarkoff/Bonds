@@ -6,14 +6,14 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties(prefix = "sources.ratings.raexpert")
 public class RaExpertConfig {
-    private boolean enabled = true;
-    private String cron = "0 0 2 * * SUN";
+    private boolean enabled;
+    private String cron;
     private CacheConfig cache = new CacheConfig();
     private DelaysConfig delays = new DelaysConfig();
 
     public static class CacheConfig {
-        private String path = "cache/raexpert";
-        private int expiresDays = 7;
+        private String path;
+        private int expiresDays;
 
         public String getPath() {
             return path;
@@ -33,8 +33,8 @@ public class RaExpertConfig {
     }
 
     public static class DelaysConfig {
-        private int pageInterval = 30;
-        private int requestTimeout = 30;
+        private int pageInterval;
+        private int requestTimeout;
 
         public int getPageInterval() {
             return pageInterval;
