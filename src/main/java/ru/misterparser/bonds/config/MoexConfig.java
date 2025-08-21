@@ -9,8 +9,6 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "sources.bonds.moex")
 public class MoexConfig {
     private boolean enabled;
-    private String source;
     private String csvUrl;
-    private String fallbackFile;
     private String cron;
 }

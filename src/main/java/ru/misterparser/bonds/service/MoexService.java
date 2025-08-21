@@ -15,14 +15,9 @@ import ru.misterparser.bonds.repository.MoexBondRepository;
 
 import java.io.*;
 import java.math.BigDecimal;
-import java.math.MathContext;
-import java.math.RoundingMode;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -48,7 +43,7 @@ public class MoexService {
             return;
         }
 
-        logger.info("Starting MOEX bonds parsing, source: {}", moexConfig.getSource());
+        logger.info("Starting MOEX bonds parsing from URL");
         
         try {
             List<String[]> csvData = loadCsvData();
@@ -66,19 +61,6 @@ public class MoexService {
     }
 
     private List<String[]> loadCsvData() throws IOException, CsvException {
-        if ("url".equals(moexConfig.getSource())) {
-            try {
-                return loadFromUrl();
-            } catch (Exception e) {
-                logger.warn("Failed to load from URL, falling back to file: {}", e.getMessage());
-                return loadFromFile();
-            }
-        } else {
-            return loadFromFile();
-        }
-    }
-
-    private List<String[]> loadFromUrl() throws IOException, CsvException {
         logger.info("Loading CSV data from URL: {}", moexConfig.getCsvUrl());
         
         URL url = new URL(moexConfig.getCsvUrl());
@@ -89,24 +71,6 @@ public class MoexService {
 
         try (InputStream inputStream = connection.getInputStream();
              InputStreamReader reader = new InputStreamReader(inputStream, CP1251)) {
-            
-            CSVParser parser = new CSVParserBuilder().withSeparator(';').build();
-            CSVReader csvReader = new CSVReaderBuilder(reader).withCSVParser(parser).build();
-            
-            return csvReader.readAll();
-        }
-    }
-
-    private List<String[]> loadFromFile() throws IOException, CsvException {
-        logger.info("Loading CSV data from file: {}", moexConfig.getFallbackFile());
-        
-        Path filePath = Paths.get(moexConfig.getFallbackFile());
-        if (!Files.exists(filePath)) {
-            throw new FileNotFoundException("Fallback file not found: " + moexConfig.getFallbackFile());
-        }
-
-        try (FileInputStream fis = new FileInputStream(filePath.toFile());
-             InputStreamReader reader = new InputStreamReader(fis, CP1251)) {
             
             CSVParser parser = new CSVParserBuilder().withSeparator(';').build();
             CSVReader csvReader = new CSVReaderBuilder(reader).withCSVParser(parser).build();
