@@ -170,3 +170,23 @@ ALTER TABLE bonds DROP COLUMN fee;
 
 --changeset bonds:14
 ALTER TABLE rating_subscription ADD COLUMN fee_percent DECIMAL(5,2);
+
+--changeset bonds:15
+CREATE TABLE moex_bonds (
+    id SERIAL PRIMARY KEY,
+    isin VARCHAR(12) NOT NULL UNIQUE,
+    short_name VARCHAR(255) NOT NULL,
+    coupon_value DECIMAL(15,8) NOT NULL,
+    maturity_date DATE NOT NULL,
+    face_value DECIMAL(15,8) NOT NULL,
+    coupon_frequency INTEGER NOT NULL,
+    coupon_length INTEGER NOT NULL,
+    coupon_days_passed INTEGER NOT NULL,
+    offer_date DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_moex_bonds_isin ON moex_bonds(isin);
+CREATE INDEX idx_moex_bonds_maturity_date ON moex_bonds(maturity_date);
+CREATE INDEX idx_moex_bonds_offer_date ON moex_bonds(offer_date);

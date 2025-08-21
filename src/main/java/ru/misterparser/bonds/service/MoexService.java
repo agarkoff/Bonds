@@ -10,8 +10,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.misterparser.bonds.config.MoexConfig;
-import ru.misterparser.bonds.model.Bond;
-import ru.misterparser.bonds.repository.BondRepository;
+import ru.misterparser.bonds.model.MoexBond;
+import ru.misterparser.bonds.repository.MoexBondRepository;
 
 import java.io.*;
 import java.math.BigDecimal;
@@ -40,7 +40,7 @@ public class MoexService {
     private MoexConfig moexConfig;
 
     @Autowired
-    private BondRepository bondRepository;
+    private MoexBondRepository moexBondRepository;
 
     public void parseBonds() {
         if (!moexConfig.isEnabled()) {
@@ -136,9 +136,9 @@ public class MoexService {
             
             processed++;
             try {
-                Bond bond = parseRow(row, columnIndexes);
+                MoexBond bond = parseRow(row, columnIndexes);
                 if (bond != null && bond.getIsin() != null) {
-                    bondRepository.saveOrUpdateMoexData(bond);
+                    moexBondRepository.saveOrUpdate(bond);
                     successful++;
                     logger.debug("Processed bond: {}", bond.getIsin());
                 } else {
@@ -192,7 +192,7 @@ public class MoexService {
         return columnIndexes;
     }
 
-    private Bond parseRow(String[] row, Map<String, Integer> columnIndexes) {
+    private MoexBond parseRow(String[] row, Map<String, Integer> columnIndexes) {
         try {
             String isin = getValue(row, columnIndexes, "ISIN");
             if (isin == null || isin.trim().isEmpty()) {
@@ -206,8 +206,8 @@ public class MoexService {
                 return null;
             }
 
-            Bond bond = new Bond(isin.trim());
-            bond.setTicker(isin.trim()); // ISIN используется как ticker
+            MoexBond bond = new MoexBond();
+            bond.setIsin(isin.trim());
             bond.setShortName(getValue(row, columnIndexes, "SHORTNAME"));
             
             // Парсинг числовых значений
