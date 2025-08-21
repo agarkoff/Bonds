@@ -6,12 +6,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.stereotype.Service;
 import ru.misterparser.bonds.model.TelegramUser;
 import ru.misterparser.bonds.repository.TelegramUserRepository;
 import ru.misterparser.bonds.security.TelegramUserDetails;
 
 import javax.crypto.Mac;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -22,29 +25,29 @@ import java.util.*;
 @RequiredArgsConstructor
 @Slf4j
 public class TelegramAuthService {
-    
+
     private final TelegramUserRepository telegramUserRepository;
-    
+
     @Value("${telegram.bot.token:}")
     private String botToken;
-    
+
     /**
      * Проверяет подлинность данных от Telegram Login Widget
      */
     public boolean verifyTelegramData(Map<String, String> authData) {
         log.debug("Проверка данных Telegram авторизации: {}", authData);
-        
+
         if (botToken == null || botToken.isEmpty()) {
             log.error("Bot token не настроен");
             return false;
         }
-        
+
         String hash = authData.get("hash");
         if (hash == null) {
             log.error("Отсутствует hash в данных авторизации");
             return false;
         }
-        
+
         // Проверяем время авторизации (не старше 1 дня)
         String authDateStr = authData.get("auth_date");
         if (authDateStr != null) {
@@ -52,7 +55,7 @@ public class TelegramAuthService {
                 long authDate = Long.parseLong(authDateStr);
                 long currentTime = Instant.now().getEpochSecond();
                 long dayInSeconds = 24 * 60 * 60;
-                
+
                 if (currentTime - authDate > dayInSeconds) {
                     log.error("Данные авторизации устарели");
                     return false;
@@ -62,32 +65,32 @@ public class TelegramAuthService {
                 return false;
             }
         }
-        
+
         // Создаем строку для проверки подписи
         Map<String, String> dataToCheck = new HashMap<>(authData);
         dataToCheck.remove("hash");
-        
+
         StringBuilder dataCheckString = new StringBuilder();
         dataToCheck.entrySet().stream()
-            .sorted(Map.Entry.comparingByKey())
-            .forEach(entry -> {
-                if (dataCheckString.length() > 0) {
-                    dataCheckString.append("\n");
-                }
-                dataCheckString.append(entry.getKey()).append("=").append(entry.getValue());
-            });
-        
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(entry -> {
+                    if (dataCheckString.length() > 0) {
+                        dataCheckString.append("\n");
+                    }
+                    dataCheckString.append(entry.getKey()).append("=").append(entry.getValue());
+                });
+
         try {
             // Создаем secret key из bot token
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] secretKey = digest.digest(botToken.getBytes(StandardCharsets.UTF_8));
-            
+
             // Создаем HMAC-SHA256 подпись
             Mac mac = Mac.getInstance("HmacSHA256");
             SecretKeySpec keySpec = new SecretKeySpec(secretKey, "HmacSHA256");
             mac.init(keySpec);
             byte[] signature = mac.doFinal(dataCheckString.toString().getBytes(StandardCharsets.UTF_8));
-            
+
             // Конвертируем в hex
             StringBuilder hexString = new StringBuilder();
             for (byte b : signature) {
@@ -97,31 +100,31 @@ public class TelegramAuthService {
                 }
                 hexString.append(hex);
             }
-            
+
             String expectedHash = hexString.toString();
             boolean isValid = expectedHash.equals(hash);
-            
+
             if (!isValid) {
                 log.error("Неверная подпись. Ожидалось: {}, получено: {}", expectedHash, hash);
             }
-            
+
             return isValid;
-            
+
         } catch (Exception e) {
             log.error("Ошибка при проверке подписи Telegram", e);
             return false;
         }
     }
-    
+
     /**
      * Создает или обновляет пользователя Telegram
      */
     public TelegramUser createOrUpdateTelegramUser(Map<String, String> authData) {
         Long telegramId = Long.parseLong(authData.get("id"));
-        
+
         TelegramUser user = telegramUserRepository.findByTelegramId(telegramId)
-            .orElse(new TelegramUser());
-        
+                .orElse(new TelegramUser());
+
         user.setTelegramId(telegramId);
         user.setUsername(authData.get("username"));
         user.setFirstName(authData.get("first_name"));
@@ -129,34 +132,34 @@ public class TelegramAuthService {
         user.setPhotoUrl(authData.get("photo_url"));
         user.setHash(authData.get("hash"));
         user.setEnabled(true);
-        
+
         String authDateStr = authData.get("auth_date");
         if (authDateStr != null) {
             user.setAuthDate(Long.parseLong(authDateStr));
         }
-        
+
         TelegramUser savedUser = telegramUserRepository.save(user);
-        log.info("Пользователь Telegram сохранен: ID={}, telegramId={}, username={}", 
+        log.info("Пользователь Telegram сохранен: ID={}, telegramId={}, username={}",
                 savedUser.getId(), savedUser.getTelegramId(), savedUser.getUsername());
         return savedUser;
     }
-    
+
     /**
      * Аутентифицирует пользователя в Spring Security
      */
     public void authenticateUser(TelegramUser telegramUser) {
         // Создаем UserDetails для пользователя
         TelegramUserDetails userDetails = TelegramUserDetails.create(telegramUser);
-        
-        UsernamePasswordAuthenticationToken authentication = 
-            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-        
+
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        
-        log.info("Пользователь аутентифицирован через Telegram: {} (ID: {})", 
+
+        log.info("Пользователь аутентифицирован через Telegram: {} (ID: {})",
                 telegramUser.getDisplayName(), telegramUser.getTelegramId());
     }
-    
+
     /**
      * Обрабатывает авторизацию через Telegram
      */
@@ -167,21 +170,21 @@ public class TelegramAuthService {
                 log.error("Неверные данные авторизации Telegram");
                 return false;
             }
-            
+
             // Создаем или обновляем пользователя
             TelegramUser telegramUser = createOrUpdateTelegramUser(authData);
-            
+
             // Аутентифицируем пользователя
             authenticateUser(telegramUser);
-            
+
             return true;
-            
+
         } catch (Exception e) {
             log.error("Ошибка при обработке авторизации Telegram", e);
             return false;
         }
     }
-    
+
     /**
      * Получает текущего авторизованного пользователя Telegram
      */
@@ -189,12 +192,38 @@ public class TelegramAuthService {
         if (authentication == null || !authentication.isAuthenticated()) {
             return null;
         }
-        
+
         Object principal = authentication.getPrincipal();
         if (principal instanceof TelegramUserDetails) {
             return ((TelegramUserDetails) principal).getTelegramUser();
         }
-        
+
         return null;
+    }
+
+    /**
+     * Получает текущего авторизованного пользователя из сессии HTTP
+     */
+    public TelegramUser getCurrentUserFromSession(HttpServletRequest request) {
+        try {
+            HttpSession session = request.getSession(false);
+            if (session == null) {
+                return null;
+            }
+
+            // Получаем SecurityContext из сессии
+            Object securityContext = session.getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY);
+            if (securityContext == null) {
+                return null;
+            }
+
+            // Извлекаем Authentication из SecurityContext
+            Authentication authentication = ((org.springframework.security.core.context.SecurityContext) securityContext).getAuthentication();
+            return getCurrentUser(authentication);
+
+        } catch (Exception e) {
+            log.debug("Ошибка при получении пользователя из сессии", e);
+            return null;
+        }
     }
 }

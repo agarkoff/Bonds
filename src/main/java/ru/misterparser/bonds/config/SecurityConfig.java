@@ -58,7 +58,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity http) throws Exception {
         http
             .authorizeRequests(authorize -> authorize
-                .antMatchers("/", "/login", "/register", "/telegram-login", "/auth/telegram/**", "/debug/**", "/proxy/**", "/api/**", "/css/**", "/js/**", "/images/**").permitAll()
+                .antMatchers("/", "/login", "/register", "/telegram-login", "/auth/telegram/**", "/debug/**", "/proxy/**", "/css/**", "/js/**", "/images/**").permitAll()
+                .antMatchers("/api/**").authenticated()
                 .anyRequest().authenticated()
             )
             .formLogin().disable()
