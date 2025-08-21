@@ -128,6 +128,8 @@ public class MoexService {
         int processed = 0;
         int successful = 0;
         int filtered = 0;
+        int skippedNoCoupon = 0;
+        int skippedNoMaturityDate = 0;
         int errors = 0;
 
         for (int i = 0; i < csvData.size(); i++) {
@@ -142,12 +144,40 @@ public class MoexService {
                     successful++;
                     logger.debug("Processed bond: {}", bond.getIsin());
                 } else {
-                    // Проверим, была ли запись отфильтрована по валюте
+                    // Проверим причину пропуска записи
                     String isin = getValue(row, columnIndexes, "ISIN");
                     String faceUnit = getValue(row, columnIndexes, "FACEUNIT");
-                    if (isin != null && !isin.trim().isEmpty() && !"RUB".equals(faceUnit)) {
-                        filtered++;
-                        logger.debug("Filtered non-RUB bond: {} ({})", isin, faceUnit);
+                    String couponValueStr = getValue(row, columnIndexes, "COUPONVALUE");
+                    
+                    if (isin != null && !isin.trim().isEmpty()) {
+                        if (!"RUB".equals(faceUnit)) {
+                            filtered++;
+                            logger.debug("Filtered non-RUB bond: {} ({})", isin, faceUnit);
+                        } else {
+                            String couponFrequencyStr = getValue(row, columnIndexes, "COUPONFREQUENCY");
+                            String couponDaysPassedStr = getValue(row, columnIndexes, "COUPONDAYSPASSED");
+                            String maturityDateStr = getValue(row, columnIndexes, "MATDATE");
+                            
+                            boolean noCouponValue = couponValueStr == null || couponValueStr.trim().isEmpty() || parseBigDecimal(couponValueStr) == null;
+                            boolean noCouponFrequency = couponFrequencyStr == null || couponFrequencyStr.trim().isEmpty() || parseInt(couponFrequencyStr) == null;
+                            boolean noCouponDaysPassed = couponDaysPassedStr == null || couponDaysPassedStr.trim().isEmpty() || parseInt(couponDaysPassedStr) == null;
+                            boolean noMaturityDate = maturityDateStr == null || maturityDateStr.trim().isEmpty() || parseDate(maturityDateStr) == null;
+                            
+                            if (noCouponValue || noCouponFrequency || noCouponDaysPassed) {
+                                skippedNoCoupon++;
+                                String missingFields = "";
+                                if (noCouponValue) missingFields += "value ";
+                                if (noCouponFrequency) missingFields += "frequency ";
+                                if (noCouponDaysPassed) missingFields += "days ";
+                                logger.debug("Skipped bond without coupon {}: {}", missingFields.trim(), isin);
+                            } else if (noMaturityDate) {
+                                skippedNoMaturityDate++;
+                                logger.debug("Skipped bond without maturity date: {}", isin);
+                            } else {
+                                errors++;
+                                logger.debug("Skipped invalid bond: {}", isin);
+                            }
+                        }
                     } else {
                         errors++;
                         logger.debug("Skipped invalid row: {}", Arrays.toString(row));
@@ -159,8 +189,8 @@ public class MoexService {
             }
         }
 
-        logger.info("MOEX parsing statistics - Processed: {}, Successful: {}, Filtered (non-RUB): {}, Errors: {}", 
-                processed, successful, filtered, errors);
+        logger.info("MOEX parsing statistics - Processed: {}, Successful: {}, Filtered (non-RUB): {}, Skipped (no coupon data): {}, Skipped (no maturity date): {}, Errors: {}", 
+                processed, successful, filtered, skippedNoCoupon, skippedNoMaturityDate, errors);
     }
 
     private String[] findHeaders(List<String[]> csvData) {
@@ -211,14 +241,48 @@ public class MoexService {
             bond.setShortName(getValue(row, columnIndexes, "SHORTNAME"));
             
             // Парсинг числовых значений
-            bond.setCouponValue(parseBigDecimal(getValue(row, columnIndexes, "COUPONVALUE")));
+            BigDecimal couponValue = parseBigDecimal(getValue(row, columnIndexes, "COUPONVALUE"));
+            
+            // Валидация размера купона - обязательное поле
+            if (couponValue == null) {
+                logger.info("Облигация {} пропущена: размер купона не задан", isin);
+                return null;
+            }
+            
+            bond.setCouponValue(couponValue);
             bond.setFaceValue(parseBigDecimal(getValue(row, columnIndexes, "FACEVALUE")));
-            bond.setCouponFrequency(parseInt(getValue(row, columnIndexes, "COUPONFREQUENCY")));
+            
+            Integer couponFrequency = parseInt(getValue(row, columnIndexes, "COUPONFREQUENCY"));
+            
+            // Валидация частоты купона - обязательное поле
+            if (couponFrequency == null) {
+                logger.info("Облигация {} пропущена: частота купона не задана", isin);
+                return null;
+            }
+            
+            bond.setCouponFrequency(couponFrequency);
             bond.setCouponLength(parseInt(getValue(row, columnIndexes, "COUPONLENGTH")));
-            bond.setCouponDaysPassed(parseInt(getValue(row, columnIndexes, "COUPONDAYSPASSED")));
+            
+            Integer couponDaysPassed = parseInt(getValue(row, columnIndexes, "COUPONDAYSPASSED"));
+            
+            // Валидация дней с последнего купона - обязательное поле
+            if (couponDaysPassed == null) {
+                logger.info("Облигация {} пропущена: дни с последнего купона не заданы", isin);
+                return null;
+            }
+            
+            bond.setCouponDaysPassed(couponDaysPassed);
             
             // Парсинг даты в формате dd.mm.yyyy
-            bond.setMaturityDate(parseDate(getValue(row, columnIndexes, "MATDATE")));
+            LocalDate maturityDate = parseDate(getValue(row, columnIndexes, "MATDATE"));
+            
+            // Валидация даты погашения - обязательное поле
+            if (maturityDate == null) {
+                logger.info("Облигация {} пропущена: дата погашения не задана", isin);
+                return null;
+            }
+            
+            bond.setMaturityDate(maturityDate);
             bond.setOfferDate(parseDate(getValue(row, columnIndexes, "OFFERDATE")));
             
             return bond;
