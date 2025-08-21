@@ -13,9 +13,7 @@ import ru.misterparser.bonds.model.Bond;
 import ru.misterparser.bonds.repository.BondRepository;
 
 import java.math.BigDecimal;
-import java.time.LocalTime;
 import java.util.List;
-import java.util.Random;
 
 @Service
 public class TBankMarketDataService {
@@ -24,10 +22,6 @@ public class TBankMarketDataService {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final RestTemplate restTemplate = new RestTemplate();
     private final RateLimitService rateLimitService = new RateLimitService();
-    private final Random random = new Random();
-
-    private static final LocalTime MARKET_OPEN = LocalTime.of(9, 50);
-    private static final LocalTime MARKET_CLOSE = LocalTime.of(18, 50);
 
     @Autowired
     private TBankConfig tBankConfig;
@@ -57,14 +51,13 @@ public class TBankMarketDataService {
 
             for (Bond bond : bonds) {
                 try {
-                    BigDecimal price = getPrice(bond);
+                    BigDecimal price = getMarketPrice(bond);
                     if (price != null) {
                         bondRepository.updatePrice(bond.getIsin(), price);
                         updated++;
                         logger.debug("Updated price for {}: {}", bond.getIsin(), price);
                     } else {
-                        errors++;
-                        logger.debug("Failed to get price for {}", bond.getIsin());
+                        logger.debug("No market price available for {}", bond.getIsin());
                     }
                 } catch (Exception e) {
                     errors++;
@@ -79,18 +72,6 @@ public class TBankMarketDataService {
         }
     }
 
-    private BigDecimal getPrice(Bond bond) throws Exception {
-        if (isMarketOpen()) {
-            return getMarketPrice(bond);
-        } else {
-            return generateMockPrice(bond);
-        }
-    }
-
-    private boolean isMarketOpen() {
-        LocalTime now = LocalTime.now();
-        return now.isAfter(MARKET_OPEN) && now.isBefore(MARKET_CLOSE);
-    }
 
     private BigDecimal getMarketPrice(Bond bond) throws Exception {
         rateLimitService.waitForRateLimit();
@@ -143,23 +124,6 @@ public class TBankMarketDataService {
         return null;
     }
 
-    private BigDecimal generateMockPrice(Bond bond) {
-        BigDecimal faceValue = bond.getFaceValue();
-        if (faceValue == null) {
-            faceValue = BigDecimal.valueOf(1000); // Default face value
-        }
-
-        // Генерируем случайную дельту от -8% до +8%
-        int deltaPct = random.nextInt(tBankConfig.getMarketdata().getMockPriceDelta() * 2 + 1) - tBankConfig.getMarketdata().getMockPriceDelta();
-        BigDecimal delta = BigDecimal.valueOf(deltaPct).divide(BigDecimal.valueOf(100));
-
-        BigDecimal price = faceValue.multiply(BigDecimal.ONE.subtract(delta));
-        
-        logger.debug("Generated mock price for {} (face value: {}, delta: {}%): {}", 
-                bond.getIsin(), faceValue, deltaPct, price);
-
-        return price;
-    }
 
     private static class RateLimitService {
         private long lastRequestTime = 0;

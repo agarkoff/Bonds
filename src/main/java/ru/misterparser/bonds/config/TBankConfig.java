@@ -27,7 +27,6 @@ public class TBankConfig {
 
     public static class MarketDataConfig {
         private String cron = "0 */15 9-18 * * MON-FRI";
-        private int mockPriceDelta = 8;
 
         public String getCron() {
             return cron;
@@ -35,14 +34,6 @@ public class TBankConfig {
 
         public void setCron(String cron) {
             this.cron = cron;
-        }
-
-        public int getMockPriceDelta() {
-            return mockPriceDelta;
-        }
-
-        public void setMockPriceDelta(int mockPriceDelta) {
-            this.mockPriceDelta = mockPriceDelta;
         }
     }
 

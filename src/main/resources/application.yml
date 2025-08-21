@@ -41,7 +41,6 @@ sources:
         cron: "0 0 2 * * *"
       marketdata:
         cron: "0 */15 9-18 * * MON-FRI"
-        mock-price-delta: 8
   ratings:
     raexpert:
       enabled: true
