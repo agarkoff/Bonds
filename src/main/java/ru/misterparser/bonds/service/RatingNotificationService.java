@@ -125,7 +125,7 @@ public class RatingNotificationService {
         params.setMinYield(subscription.getMinYield());
         params.setMaxYield(subscription.getMaxYield());
         params.setIncludeOffer(subscription.isIncludeOffer());
-        params.setCustomFeePercent(null); // Без пересчёта комиссии для уведомлений
+        params.setCustomFeePercent(subscription.getFeePercent()); // Используем комиссию из подписки
         params.setLimit(null); // Без ограничений, ограничим после
         
         // Используем единый сервис фильтрации и сортировки

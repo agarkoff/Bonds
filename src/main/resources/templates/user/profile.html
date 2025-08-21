@@ -396,6 +396,9 @@
                             <span th:if="${subscription.maxMaturityWeeks != null}">до <span th:text="${subscription.maxMaturityWeeks}">52</span> нед.</span>
                         </p>
                         <p th:if="${subscription.includeOffer}"><strong>🎯 Учитываются оферты</strong></p>
+                        <p th:if="${subscription.feePercent != null}">
+                            <strong>Комиссия:</strong> <span th:text="${#numbers.formatDecimal(subscription.feePercent, 0, 2)}">0.30</span>%
+                        </p>
                         <p>
                             <strong>Создана:</strong> 
                             <span th:text="${#temporals.format(subscription.createdAt, 'dd.MM.yyyy HH:mm')}">01.01.2024 12:00</span>

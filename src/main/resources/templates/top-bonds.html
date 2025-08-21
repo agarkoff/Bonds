@@ -619,6 +619,7 @@
             const tickerCount = formData.get('limit') ? parseInt(formData.get('limit')) : 50;
             const includeOffer = formData.get('showOffer') === 'on';
             const searchText = formData.get('searchText') || '';
+            const feePercent = formData.get('feePercent') ? parseFloat(formData.get('feePercent')) : 0.30;
             
             // Generate automatic subscription name based on filters
             let subscriptionName = `Рейтинг`;
@@ -644,7 +645,8 @@
                 tickerCount: tickerCount,
                 includeOffer: includeOffer,
                 minMaturityWeeks: minWeeks,
-                maxMaturityWeeks: maxWeeks
+                maxMaturityWeeks: maxWeeks,
+                feePercent: feePercent
             };
 
             // Save button text change

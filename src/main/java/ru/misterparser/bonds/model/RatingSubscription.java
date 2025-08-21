@@ -22,6 +22,7 @@ public class RatingSubscription {
     private boolean includeOffer = false;
     private Integer minMaturityWeeks;
     private Integer maxMaturityWeeks;
+    private BigDecimal feePercent;
     private boolean enabled = true;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -29,7 +30,8 @@ public class RatingSubscription {
     
     public RatingSubscription(Long telegramUserId, String name, int periodHours, 
                             BigDecimal minYield, BigDecimal maxYield, int tickerCount, 
-                            boolean includeOffer, Integer minMaturityWeeks, Integer maxMaturityWeeks) {
+                            boolean includeOffer, Integer minMaturityWeeks, Integer maxMaturityWeeks,
+                            BigDecimal feePercent) {
         this.telegramUserId = telegramUserId;
         this.name = name;
         this.periodHours = periodHours;
@@ -39,6 +41,7 @@ public class RatingSubscription {
         this.includeOffer = includeOffer;
         this.minMaturityWeeks = minMaturityWeeks;
         this.maxMaturityWeeks = maxMaturityWeeks;
+        this.feePercent = feePercent;
         this.enabled = true;
     }
 }

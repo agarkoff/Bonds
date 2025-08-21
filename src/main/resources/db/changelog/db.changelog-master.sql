@@ -167,3 +167,6 @@ CREATE INDEX IF NOT EXISTS idx_persistent_logins_last_used ON persistent_logins(
 
 --changeset bonds:13
 ALTER TABLE bonds DROP COLUMN fee;
+
+--changeset bonds:14
+ALTER TABLE rating_subscription ADD COLUMN fee_percent DECIMAL(5,2);

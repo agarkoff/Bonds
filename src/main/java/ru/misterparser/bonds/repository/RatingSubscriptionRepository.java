@@ -38,6 +38,7 @@ public class RatingSubscriptionRepository {
             subscription.setIncludeOffer(rs.getBoolean("include_offer"));
             subscription.setMinMaturityWeeks(rs.getObject("min_maturity_weeks", Integer.class));
             subscription.setMaxMaturityWeeks(rs.getObject("max_maturity_weeks", Integer.class));
+            subscription.setFeePercent(rs.getBigDecimal("fee_percent"));
             subscription.setEnabled(rs.getBoolean("enabled"));
             subscription.setCreatedAt(rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toLocalDateTime() : null);
             subscription.setUpdatedAt(rs.getTimestamp("updated_at") != null ? rs.getTimestamp("updated_at").toLocalDateTime() : null);
@@ -59,8 +60,8 @@ public class RatingSubscriptionRepository {
 
     private RatingSubscription create(RatingSubscription subscription) {
         String sql = "INSERT INTO rating_subscription (telegram_user_id, name, period_hours, min_yield, max_yield, " +
-                    "ticker_count, include_offer, min_maturity_weeks, max_maturity_weeks, enabled) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    "ticker_count, include_offer, min_maturity_weeks, max_maturity_weeks, fee_percent, enabled) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
@@ -74,7 +75,8 @@ public class RatingSubscriptionRepository {
             ps.setBoolean(7, subscription.isIncludeOffer());
             ps.setObject(8, subscription.getMinMaturityWeeks());
             ps.setObject(9, subscription.getMaxMaturityWeeks());
-            ps.setBoolean(10, subscription.isEnabled());
+            ps.setBigDecimal(10, subscription.getFeePercent());
+            ps.setBoolean(11, subscription.isEnabled());
             return ps;
         }, keyHolder);
         
@@ -93,12 +95,12 @@ public class RatingSubscriptionRepository {
     private RatingSubscription update(RatingSubscription subscription) {
         String sql = "UPDATE rating_subscription SET name = ?, period_hours = ?, min_yield = ?, max_yield = ?, " +
                     "ticker_count = ?, include_offer = ?, min_maturity_weeks = ?, max_maturity_weeks = ?, " +
-                    "enabled = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+                    "fee_percent = ?, enabled = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
         
         jdbcTemplate.update(sql, subscription.getName(), subscription.getPeriodHours(), 
                           subscription.getMinYield(), subscription.getMaxYield(), subscription.getTickerCount(),
                           subscription.isIncludeOffer(), subscription.getMinMaturityWeeks(), 
-                          subscription.getMaxMaturityWeeks(), subscription.isEnabled(), subscription.getId());
+                          subscription.getMaxMaturityWeeks(), subscription.getFeePercent(), subscription.isEnabled(), subscription.getId());
         
         return findById(subscription.getId()).orElse(subscription);
     }
