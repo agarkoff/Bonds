@@ -1,8 +1,10 @@
 package ru.misterparser.bonds.config;
 
+import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
+@Data
 @Configuration
 @ConfigurationProperties(prefix = "sources.ratings.raexpert")
 public class RaExpertConfig {
@@ -11,77 +13,15 @@ public class RaExpertConfig {
     private CacheConfig cache = new CacheConfig();
     private DelaysConfig delays = new DelaysConfig();
 
+    @Data
     public static class CacheConfig {
         private String path;
         private int expiresDays;
-
-        public String getPath() {
-            return path;
-        }
-
-        public void setPath(String path) {
-            this.path = path;
-        }
-
-        public int getExpiresDays() {
-            return expiresDays;
-        }
-
-        public void setExpiresDays(int expiresDays) {
-            this.expiresDays = expiresDays;
-        }
     }
 
+    @Data
     public static class DelaysConfig {
         private int pageInterval;
         private int requestTimeout;
-
-        public int getPageInterval() {
-            return pageInterval;
-        }
-
-        public void setPageInterval(int pageInterval) {
-            this.pageInterval = pageInterval;
-        }
-
-        public int getRequestTimeout() {
-            return requestTimeout;
-        }
-
-        public void setRequestTimeout(int requestTimeout) {
-            this.requestTimeout = requestTimeout;
-        }
-    }
-
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
-
-    public String getCron() {
-        return cron;
-    }
-
-    public void setCron(String cron) {
-        this.cron = cron;
-    }
-
-    public CacheConfig getCache() {
-        return cache;
-    }
-
-    public void setCache(CacheConfig cache) {
-        this.cache = cache;
-    }
-
-    public DelaysConfig getDelays() {
-        return delays;
-    }
-
-    public void setDelays(DelaysConfig delays) {
-        this.delays = delays;
     }
 }
