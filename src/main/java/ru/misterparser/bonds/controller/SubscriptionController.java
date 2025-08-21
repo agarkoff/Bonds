@@ -242,7 +242,7 @@ public class SubscriptionController {
      * Обновляет название подписки
      */
     @PatchMapping("/{id}")
-    public ResponseEntity<?> updateSubscription(@PathVariable Long id, 
+    public ResponseEntity<?> updateSubscriptionName(@PathVariable Long id, 
                                                @RequestBody Map<String, String> updateData,
                                                Authentication authentication) {
         try {
