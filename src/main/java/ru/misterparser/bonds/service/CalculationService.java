@@ -113,15 +113,8 @@ public class CalculationService {
                 .multiply(new BigDecimal(bond.getCouponDaysPassed() + 1), mathContext);
         bond.setNkd(nkd);
 
-        // 3. Комиссия
-        BigDecimal preFeeCosts = bond.getPrice().add(nkd);
-        BigDecimal fee = preFeeCosts
-                .multiply(calcConfig.getBroker().getFee(), mathContext)
-                .divide(HUNDRED, mathContext);
-        bond.setFee(fee);
-
-        // 4. Затраты
-        BigDecimal costs = preFeeCosts.add(fee);
+        // 3. Затраты (только цена + НКД, без комиссии)
+        BigDecimal costs = bond.getPrice().add(nkd);
         bond.setCosts(costs);
 
         // 5. Купоны до погашения

@@ -9,23 +9,10 @@ import java.math.BigDecimal;
 @ConfigurationProperties(prefix = "calc")
 public class CalcConfig {
     private int periodMinutes = 30;
-    private BrokerConfig broker = new BrokerConfig();
     private BigDecimal ndfl = new BigDecimal("13");
     private int precision = 8;
     private int minDaysToMaturity = 1;
     private BigDecimal maxYield = new BigDecimal("50");
-
-    public static class BrokerConfig {
-        private BigDecimal fee = new BigDecimal("0.05");
-
-        public BigDecimal getFee() {
-            return fee;
-        }
-
-        public void setFee(BigDecimal fee) {
-            this.fee = fee;
-        }
-    }
 
     public int getPeriodMinutes() {
         return periodMinutes;
@@ -33,14 +20,6 @@ public class CalcConfig {
 
     public void setPeriodMinutes(int periodMinutes) {
         this.periodMinutes = periodMinutes;
-    }
-
-    public BrokerConfig getBroker() {
-        return broker;
-    }
-
-    public void setBroker(BrokerConfig broker) {
-        this.broker = broker;
     }
 
     public BigDecimal getNdfl() {

@@ -43,7 +43,6 @@ public class BondRepository {
             bond.setCouponDaily(rs.getBigDecimal("coupon_daily"));
             bond.setNkd(rs.getBigDecimal("nkd"));
             bond.setCosts(rs.getBigDecimal("costs"));
-            bond.setFee(rs.getBigDecimal("fee"));
             bond.setCouponRedemption(rs.getBigDecimal("coupon_redemption"));
             bond.setProfit(rs.getBigDecimal("profit"));
             bond.setProfitNet(rs.getBigDecimal("profit_net"));
@@ -127,7 +126,7 @@ public class BondRepository {
         if (bond.getId() == null) {
             String sql = "INSERT INTO bonds (isin, ticker, short_name, coupon_value, maturity_date, face_value, " +
                     "coupon_frequency, coupon_length, coupon_days_passed, offer_date, figi, instrument_uid, asset_uid, brand_name, " +
-                    "price, rating_value, rating_code, coupon_daily, nkd, costs, fee, coupon_redemption, " +
+                    "price, rating_value, rating_code, coupon_daily, nkd, costs, coupon_redemption, " +
                     "profit, profit_net, annual_yield, coupon_offer, profit_offer, profit_net_offer, annual_yield_offer) " +
                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             
@@ -152,7 +151,6 @@ public class BondRepository {
                     bond.getCouponDaily(),
                     bond.getNkd(),
                     bond.getCosts(),
-                    bond.getFee(),
                     bond.getCouponRedemption(),
                     bond.getProfit(),
                     bond.getProfitNet(),
@@ -166,7 +164,7 @@ public class BondRepository {
             String sql = "UPDATE bonds SET ticker = ?, short_name = ?, coupon_value = ?, maturity_date = ?, face_value = ?, " +
                     "coupon_frequency = ?, coupon_length = ?, coupon_days_passed = ?, offer_date = ?, figi = ?, instrument_uid = ?, " +
                     "asset_uid = ?, brand_name = ?, price = ?, rating_value = ?, rating_code = ?, coupon_daily = ?, " +
-                    "nkd = ?, costs = ?, fee = ?, coupon_redemption = ?, profit = ?, profit_net = ?, " +
+                    "nkd = ?, costs = ?, coupon_redemption = ?, profit = ?, profit_net = ?, " +
                     "annual_yield = ?, coupon_offer = ?, profit_offer = ?, profit_net_offer = ?, annual_yield_offer = ?, " +
                     "updated_at = CURRENT_TIMESTAMP WHERE id = ?";
             
@@ -190,7 +188,6 @@ public class BondRepository {
                     bond.getCouponDaily(),
                     bond.getNkd(),
                     bond.getCosts(),
-                    bond.getFee(),
                     bond.getCouponRedemption(),
                     bond.getProfit(),
                     bond.getProfitNet(),
@@ -272,7 +269,7 @@ public class BondRepository {
     }
 
     private void updateCalculationFields(Bond bond) {
-        String sql = "UPDATE bonds SET coupon_daily = ?, nkd = ?, costs = ?, fee = ?, " +
+        String sql = "UPDATE bonds SET coupon_daily = ?, nkd = ?, costs = ?, " +
                 "coupon_redemption = ?, profit = ?, profit_net = ?, annual_yield = ?, " +
                 "coupon_offer = ?, profit_offer = ?, profit_net_offer = ?, annual_yield_offer = ?, " +
                 "updated_at = CURRENT_TIMESTAMP WHERE isin = ?";
@@ -281,7 +278,6 @@ public class BondRepository {
                 bond.getCouponDaily(),
                 bond.getNkd(),
                 bond.getCosts(),
-                bond.getFee(),
                 bond.getCouponRedemption(),
                 bond.getProfit(),
                 bond.getProfitNet(),

@@ -55,8 +55,6 @@ sources:
 # Расчеты
 calc:
   period-minutes: 30
-  broker:
-    fee: 0.05
   ndfl: 13
   precision: 8
   min-days-to-maturity: 1

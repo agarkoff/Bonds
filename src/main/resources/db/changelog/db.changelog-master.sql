@@ -164,3 +164,6 @@ CREATE TABLE IF NOT EXISTS persistent_logins (
 
 CREATE INDEX IF NOT EXISTS idx_persistent_logins_username ON persistent_logins(username);
 CREATE INDEX IF NOT EXISTS idx_persistent_logins_last_used ON persistent_logins(last_used);
+
+--changeset bonds:13
+ALTER TABLE bonds DROP COLUMN fee;
