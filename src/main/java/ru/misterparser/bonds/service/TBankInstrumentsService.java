@@ -10,8 +10,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import ru.misterparser.bonds.config.TBankConfig;
-import ru.misterparser.bonds.model.Bond;
-import ru.misterparser.bonds.repository.BondRepository;
+import ru.misterparser.bonds.model.TBankBond;
+import ru.misterparser.bonds.repository.TBankBondRepository;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,7 +29,7 @@ public class TBankInstrumentsService {
     private TBankConfig tBankConfig;
 
     @Autowired
-    private BondRepository bondRepository;
+    private TBankBondRepository tBankBondRepository;
 
     @Transactional
     public void updateBondsData() {
@@ -82,7 +82,7 @@ public class TBankInstrumentsService {
             
             for (JsonNode assetNode : assetsNode) {
                 String assetUid = assetNode.path("uid").asText();
-                String brandId = assetNode.path("brand").path("uid").asText();
+                String brandId = assetNode.path("name").asText();
                 
                 if (!assetUid.isEmpty() && !brandId.isEmpty()) {
                     assetBrands.put(assetUid, brandId);
@@ -145,6 +145,7 @@ public class TBankInstrumentsService {
             
             int processed = 0;
             int updated = 0;
+            int newRecords = 0;
             
             for (JsonNode instrumentNode : instrumentsNode) {
                 processed++;
@@ -154,45 +155,62 @@ public class TBankInstrumentsService {
                     String instrumentUid = instrumentNode.path("uid").asText();
                     String assetUid = instrumentNode.path("assetUid").asText();
                     
-                    if (!ticker.isEmpty() && !figi.isEmpty()) {
-                        Optional<Bond> existingBond = bondRepository.findByIsin(ticker);
+                    if (!ticker.isEmpty() && !figi.isEmpty() && !instrumentUid.isEmpty()) {
+                        // Проверяем существующую запись
+                        Optional<TBankBond> existingBond = tBankBondRepository.findByInstrumentUid(instrumentUid);
                         
-                        Bond bond;
-                        if (existingBond.isPresent()) {
-                            bond = existingBond.get();
-                        } else {
-                            bond = new Bond(ticker);
-                            bond.setTicker(ticker);
-                        }
-                        
-                        bond.setFigi(figi);
-                        bond.setInstrumentUid(instrumentUid);
-                        bond.setAssetUid(assetUid);
+                        TBankBond tBankBond = new TBankBond();
+                        tBankBond.setInstrumentUid(instrumentUid);
+                        tBankBond.setFigi(figi);
+                        tBankBond.setTicker(ticker);
+                        tBankBond.setAssetUid(assetUid);
                         
                         // Обогащаем данными о бренде с помощью метода GetBrandBy
+                        String brandName = null;
                         if (!assetUid.isEmpty() && assetBrands.containsKey(assetUid)) {
                             try {
                                 String brandId = assetBrands.get(assetUid);
-                                String brandName = getBrandByUid(brandId);
+                                brandName = getBrandByUid(brandId);
                                 if (brandName != null) {
-                                    bond.setBrandName(brandName);
+                                    tBankBond.setBrandName(brandName);
+                                    logger.debug("Enriched bond {} with brand: {}", ticker, brandName);
                                 }
                             } catch (Exception e) {
                                 logger.debug("Failed to get brand for asset {}: {}", assetUid, e.getMessage());
                             }
                         }
                         
-                        bondRepository.saveOrUpdateTBankData(bond);
+                        // Логируем расхождения при обновлении существующих записей
+                        if (existingBond.isPresent()) {
+                            TBankBond existing = existingBond.get();
+                            if (!figi.equals(existing.getFigi())) {
+                                logger.info("FIGI changed for instrument {}: {} -> {}", instrumentUid, existing.getFigi(), figi);
+                            }
+                            if (!ticker.equals(existing.getTicker())) {
+                                logger.info("Ticker changed for instrument {}: {} -> {}", instrumentUid, existing.getTicker(), ticker);
+                            }
+                            if (!assetUid.equals(existing.getAssetUid())) {
+                                logger.info("Asset UID changed for instrument {}: {} -> {}", instrumentUid, existing.getAssetUid(), assetUid);
+                            }
+                            if (brandName != null && !brandName.equals(existing.getBrandName())) {
+                                logger.info("Brand name changed for instrument {}: {} -> {}", instrumentUid, existing.getBrandName(), brandName);
+                            }
+                        } else {
+                            newRecords++;
+                            logger.debug("New T-Bank bond: {} (FIGI: {})", ticker, figi);
+                        }
+                        
+                        tBankBondRepository.saveOrUpdate(tBankBond);
                         updated++;
                         
-                        logger.debug("Updated bond: {} (FIGI: {})", ticker, figi);
+                        logger.debug("Processed T-Bank bond: {} (FIGI: {})", ticker, figi);
                     }
                 } catch (Exception e) {
                     logger.debug("Error processing instrument: {}", e.getMessage());
                 }
             }
             
-            logger.info("T-Bank instruments statistics - Processed: {}, Updated: {}", processed, updated);
+            logger.info("T-Bank instruments statistics - Processed: {}, Updated: {}, New records: {}", processed, updated, newRecords);
             
         } else {
             logger.error("Failed to load instruments: {}", response.getStatusCode());

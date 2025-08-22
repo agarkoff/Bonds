@@ -190,3 +190,20 @@ CREATE TABLE moex_bonds (
 CREATE INDEX idx_moex_bonds_isin ON moex_bonds(isin);
 CREATE INDEX idx_moex_bonds_maturity_date ON moex_bonds(maturity_date);
 CREATE INDEX idx_moex_bonds_offer_date ON moex_bonds(offer_date);
+
+
+--changeset bonds:16
+CREATE TABLE tbank_bonds (
+    id SERIAL PRIMARY KEY,
+    instrument_uid VARCHAR(255) NOT NULL UNIQUE,
+    figi VARCHAR(12) NOT NULL,
+    ticker VARCHAR(12) NOT NULL,
+    asset_uid VARCHAR(255) NOT NULL,
+    brand_name VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_tbank_bonds_instrument_uid ON tbank_bonds(instrument_uid);
+CREATE INDEX idx_tbank_bonds_figi ON tbank_bonds(figi);
+CREATE INDEX idx_tbank_bonds_ticker ON tbank_bonds(ticker);

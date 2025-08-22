@@ -38,7 +38,7 @@ sources:
       token: "${TBANK_TOKEN:}"
       rate-limit: 60
       instruments:
-        cron: "0 0 2 * * *"
+        cron: "0 0 12 * * MON-FRI"
       marketdata:
         cron: "0 */15 9-18 * * MON-FRI"
   ratings:

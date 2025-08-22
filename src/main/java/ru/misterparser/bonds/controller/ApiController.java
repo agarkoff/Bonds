@@ -50,7 +50,7 @@ public class ApiController {
         }
     }
 
-    @PostMapping("/tbank/bonds/update")
+    @PostMapping("/tbank/bonds/parse")
     public ResponseEntity<String> updateTBankBonds() {
         logger.info("Manual T-Bank bonds update triggered");
         try {
