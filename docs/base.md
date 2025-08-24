@@ -9,7 +9,7 @@
 ### 1. Сбор данных об облигациях
 - **[MOEX](moex.md)** - получение базовых данных с Московской биржи
 - **[T-Bank Instruments](tbank-instruments.md)** - получение данных об активах и инструментах через API Тинькофф
-- **[T-Bank Market Data](tbank-marketdata.md)** - получение актуальных цен через API Тинькофф
+- **[T-Bank Market Data](tbank-prices.md)** - получение актуальных цен через API Тинькофф
 
 ### 2. Сбор рейтинговых данных
 - **[RaExpert](raexpert.md)** - парсинг рейтингов облигаций с сайта raexpert.ru

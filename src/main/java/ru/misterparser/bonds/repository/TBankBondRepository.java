@@ -1,5 +1,6 @@
 package ru.misterparser.bonds.repository;
 
+import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -90,5 +91,44 @@ public class TBankBondRepository {
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to delete T-Bank bonds", e);
         }
+    }
+
+    /**
+     * Получает все TBank облигации с номинальными стоимостями из MOEX
+     */
+    public List<TBankBondWithFaceValue> findAllWithFaceValues() {
+        try {
+            String sql = "SELECT tb.instrument_uid, tb.figi, tb.ticker, tb.asset_uid, tb.brand_name, " +
+                    "mb.face_value " +
+                    "FROM tbank_bonds tb " +
+                    "LEFT JOIN moex_bonds mb ON tb.ticker = mb.isin " +
+                    "ORDER BY tb.ticker";
+            
+            return jdbcTemplate.query(sql, (rs, rowNum) -> {
+                TBankBondWithFaceValue bond = new TBankBondWithFaceValue();
+                bond.setInstrumentUid(rs.getString("instrument_uid"));
+                bond.setFigi(rs.getString("figi"));
+                bond.setTicker(rs.getString("ticker"));
+                bond.setAssetUid(rs.getString("asset_uid"));
+                bond.setBrandName(rs.getString("brand_name"));
+                bond.setFaceValue(rs.getBigDecimal("face_value"));
+                return bond;
+            });
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to load T-Bank bonds with face values", e);
+        }
+    }
+
+    /**
+     * Класс для хранения TBank облигации с номинальной стоимостью
+     */
+    @Data
+    public static class TBankBondWithFaceValue {
+        private String instrumentUid;
+        private String figi;
+        private String ticker;
+        private String assetUid;
+        private String brandName;
+        private java.math.BigDecimal faceValue;
     }
 }

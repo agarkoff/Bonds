@@ -207,3 +207,15 @@ CREATE TABLE tbank_bonds (
 CREATE INDEX idx_tbank_bonds_instrument_uid ON tbank_bonds(instrument_uid);
 CREATE INDEX idx_tbank_bonds_figi ON tbank_bonds(figi);
 CREATE INDEX idx_tbank_bonds_ticker ON tbank_bonds(ticker);
+
+
+--changeset bonds:17
+CREATE TABLE tbank_prices (
+    id SERIAL PRIMARY KEY,
+    figi VARCHAR(12) NOT NULL UNIQUE,
+    price DECIMAL(15,8),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_tbank_prices_figi ON tbank_prices(figi);
