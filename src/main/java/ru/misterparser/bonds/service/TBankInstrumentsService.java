@@ -46,12 +46,8 @@ public class TBankInstrumentsService {
         logger.info("Starting T-Bank instruments update");
 
         try {
-            // Загружаем активы для получения брендов
-            Map<String, String> assetBrands = loadAssets();
-            logger.info("Loaded {} asset-brand mappings", assetBrands.size());
-            
             // Получаем инструменты (облигации) и обогащаем их брендами
-            loadInstruments(assetBrands);
+            loadInstruments();
             
             logger.info("T-Bank instruments update completed successfully");
             
@@ -60,39 +56,35 @@ public class TBankInstrumentsService {
         }
     }
 
-    private Map<String, String> loadAssets() throws Exception {
-        Map<String, String> assetBrands = new HashMap<>();
-        
+    private String getBrandNameFromAsset(String assetUid) throws Exception {
         rateLimitService.waitForRateLimit();
         
-        String url = tBankConfig.getApiUrl() + "/tinkoff.public.invest.api.contract.v1.InstrumentsService/GetAssets";
+        String url = tBankConfig.getApiUrl() + "/tinkoff.public.invest.api.contract.v1.InstrumentsService/GetAssetBy";
         
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + tBankConfig.getToken());
         headers.setContentType(MediaType.APPLICATION_JSON);
         
-        String requestBody = "{}";
+        String requestBody = String.format("{\"id\": \"%s\"}", assetUid);
         HttpEntity<String> entity = new HttpEntity<>(requestBody, headers);
         
         ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
         
         if (response.getStatusCode() == HttpStatus.OK) {
             JsonNode rootNode = objectMapper.readTree(response.getBody());
-            JsonNode assetsNode = rootNode.path("assets");
+            JsonNode assetNode = rootNode.path("asset");
+            JsonNode brandNode = assetNode.path("brand");
+            String brandName = brandNode.path("name").asText();
             
-            for (JsonNode assetNode : assetsNode) {
-                String assetUid = assetNode.path("uid").asText();
-                String brandId = assetNode.path("name").asText();
-                
-                if (!assetUid.isEmpty() && !brandId.isEmpty()) {
-                    assetBrands.put(assetUid, brandId);
-                }
+            if (!brandName.isEmpty()) {
+                logger.debug("Found brand ID for asset {}: {}", assetUid, brandName);
+                return brandName;
             }
         } else {
-            logger.error("Failed to load assets: {}", response.getStatusCode());
+            logger.debug("Failed to get asset details for asset {}: {}", assetUid, response.getStatusCode());
         }
         
-        return assetBrands;
+        return null;
     }
 
     private String getBrandByUid(String brandId) throws Exception {
@@ -125,7 +117,7 @@ public class TBankInstrumentsService {
         return null;
     }
 
-    private void loadInstruments(Map<String, String> assetBrands) throws Exception {
+    private void loadInstruments() throws Exception {
         rateLimitService.waitForRateLimit();
         
         String url = tBankConfig.getApiUrl() + "/tinkoff.public.invest.api.contract.v1.InstrumentsService/Bonds";
@@ -165,12 +157,12 @@ public class TBankInstrumentsService {
                         tBankBond.setTicker(ticker);
                         tBankBond.setAssetUid(assetUid);
                         
-                        // Обогащаем данными о бренде с помощью метода GetBrandBy
+                        // Обогащаем данными о бренде с помощью методов GetAssetBy и GetBrandBy
                         String brandName = null;
-                        if (!assetUid.isEmpty() && assetBrands.containsKey(assetUid)) {
+                        if (!assetUid.isEmpty()) {
                             try {
-                                String brandId = assetBrands.get(assetUid);
-                                brandName = getBrandByUid(brandId);
+                                // Получаем полную информацию об активе для извлечения brand ID
+                                brandName = getBrandNameFromAsset(assetUid);
                                 if (brandName != null) {
                                     tBankBond.setBrandName(brandName);
                                     logger.debug("Enriched bond {} with brand: {}", ticker, brandName);
