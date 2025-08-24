@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,10 +17,12 @@ import ru.misterparser.bonds.repository.TBankBondRepository;
 import ru.misterparser.bonds.repository.TBankPriceRepository;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalTime;
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Random;
 
 @Service
 public class TBankMarketDataService {
@@ -37,6 +40,11 @@ public class TBankMarketDataService {
     
     @Autowired
     private TBankPriceRepository tBankPriceRepository;
+    
+    @Autowired
+    private Environment environment;
+    
+    private final Random random = new Random();
 
     @Transactional
     public void updatePrices() {
@@ -50,13 +58,18 @@ public class TBankMarketDataService {
             return;
         }
 
-        // Проверка торговых часов (09:50 - 18:50, понедельник-пятница)
-        if (!isMarketHours()) {
+        // В режиме тестирования пропускаем проверку торговых часов
+        boolean isTestMode = isTestMode();
+        if (!isTestMode && !isMarketHours()) {
             logger.info("Outside market hours, skipping price update");
             return;
         }
 
-        logger.info("Starting T-Bank prices update during market hours");
+        if (isTestMode) {
+            logger.info("Starting T-Bank prices update in TEST mode with random prices");
+        } else {
+            logger.info("Starting T-Bank prices update during market hours");
+        }
 
         try {
             List<TBankBondWithFaceValue> bonds = tBankBondRepository.findAllWithFaceValues();
@@ -76,7 +89,13 @@ public class TBankMarketDataService {
                         continue;
                     }
                     
-                    BigDecimal price = getMarketPrice(bond);
+                    BigDecimal price;
+                    if (isTestMode()) {
+                        price = generateRandomPrice(bond.getFaceValue());
+                    } else {
+                        price = getMarketPrice(bond);
+                    }
+                    
                     if (price != null) {
                         TBankPrice tBankPrice = new TBankPrice();
                         tBankPrice.setFigi(bond.getFigi());
@@ -117,6 +136,28 @@ public class TBankMarketDataService {
         LocalTime marketClose = LocalTime.of(18, 50);
         
         return timeNow.isAfter(marketOpen) && timeNow.isBefore(marketClose);
+    }
+    
+    private boolean isTestMode() {
+        String[] activeProfiles = environment.getActiveProfiles();
+        for (String profile : activeProfiles) {
+            if ("test".equals(profile)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    private BigDecimal generateRandomPrice(BigDecimal faceValue) {
+        // Генерируем случайную цену в диапазоне от 80% до 120% от номинала
+        double randomPercent = 80.0 + (120.0 - 80.0) * random.nextDouble();
+        BigDecimal price = faceValue.multiply(BigDecimal.valueOf(randomPercent))
+                .divide(BigDecimal.valueOf(100), 8, RoundingMode.HALF_UP);
+        
+        logger.debug("Generated random price for face_value {}: {} ({}%)", 
+                faceValue, price, String.format("%.2f", randomPercent));
+        
+        return price;
     }
 
 
