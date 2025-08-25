@@ -3,8 +3,7 @@ package ru.misterparser.bonds.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,9 +18,9 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TBankInstrumentsService {
 
-    private static final Logger logger = LoggerFactory.getLogger(TBankInstrumentsService.class);
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final RestTemplate restTemplate = new RestTemplate();
     private final RateLimitService rateLimitService = new RateLimitService();
@@ -32,25 +31,25 @@ public class TBankInstrumentsService {
     @Transactional
     public void updateBondsData() {
         if (!tBankConfig.isEnabled()) {
-            logger.info("T-Bank instruments update is disabled");
+            log.info("T-Bank instruments update is disabled");
             return;
         }
 
         if (tBankConfig.getToken() == null || tBankConfig.getToken().trim().isEmpty()) {
-            logger.error("T-Bank token is not configured");
+            log.error("T-Bank token is not configured");
             return;
         }
 
-        logger.info("Starting T-Bank instruments update");
+        log.info("Starting T-Bank instruments update");
 
         try {
             // Получаем инструменты (облигации) и обогащаем их брендами
             loadInstruments();
             
-            logger.info("T-Bank instruments update completed successfully");
+            log.info("T-Bank instruments update completed successfully");
             
         } catch (Exception e) {
-            logger.error("Error during T-Bank instruments update", e);
+            log.error("Error during T-Bank instruments update", e);
         }
     }
 
@@ -75,11 +74,11 @@ public class TBankInstrumentsService {
             String brandName = brandNode.path("name").asText();
             
             if (!brandName.isEmpty()) {
-                logger.debug("Found brand ID for asset {}: {}", assetUid, brandName);
+                log.debug("Found brand ID for asset {}: {}", assetUid, brandName);
                 return brandName;
             }
         } else {
-            logger.debug("Failed to get asset details for asset {}: {}", assetUid, response.getStatusCode());
+            log.debug("Failed to get asset details for asset {}: {}", assetUid, response.getStatusCode());
         }
         
         return null;
@@ -105,11 +104,11 @@ public class TBankInstrumentsService {
             String brandName = brandNode.path("name").asText();
             
             if (!brandName.isEmpty()) {
-                logger.debug("Found brand name for brand {}: {}", brandId, brandName);
+                log.debug("Found brand name for brand {}: {}", brandId, brandName);
                 return brandName;
             }
         } else {
-            logger.debug("Failed to get brand for brand ID {}: {}", brandId, response.getStatusCode());
+            log.debug("Failed to get brand for brand ID {}: {}", brandId, response.getStatusCode());
         }
         
         return null;
@@ -163,10 +162,10 @@ public class TBankInstrumentsService {
                                 brandName = getBrandNameFromAsset(assetUid);
                                 if (brandName != null) {
                                     tBankBond.setBrandName(brandName);
-                                    logger.debug("Enriched bond {} with brand: {}", ticker, brandName);
+                                    log.debug("Enriched bond {} with brand: {}", ticker, brandName);
                                 }
                             } catch (Exception e) {
-                                logger.debug("Failed to get brand for asset {}: {}", assetUid, e.getMessage());
+                                log.debug("Failed to get brand for asset {}: {}", assetUid, e.getMessage());
                             }
                         }
                         
@@ -174,36 +173,36 @@ public class TBankInstrumentsService {
                         if (existingBond.isPresent()) {
                             TBankBond existing = existingBond.get();
                             if (!figi.equals(existing.getFigi())) {
-                                logger.info("FIGI changed for instrument {}: {} -> {}", instrumentUid, existing.getFigi(), figi);
+                                log.info("FIGI changed for instrument {}: {} -> {}", instrumentUid, existing.getFigi(), figi);
                             }
                             if (!ticker.equals(existing.getTicker())) {
-                                logger.info("Ticker changed for instrument {}: {} -> {}", instrumentUid, existing.getTicker(), ticker);
+                                log.info("Ticker changed for instrument {}: {} -> {}", instrumentUid, existing.getTicker(), ticker);
                             }
                             if (!assetUid.equals(existing.getAssetUid())) {
-                                logger.info("Asset UID changed for instrument {}: {} -> {}", instrumentUid, existing.getAssetUid(), assetUid);
+                                log.info("Asset UID changed for instrument {}: {} -> {}", instrumentUid, existing.getAssetUid(), assetUid);
                             }
                             if (brandName != null && !brandName.equals(existing.getBrandName())) {
-                                logger.info("Brand name changed for instrument {}: {} -> {}", instrumentUid, existing.getBrandName(), brandName);
+                                log.info("Brand name changed for instrument {}: {} -> {}", instrumentUid, existing.getBrandName(), brandName);
                             }
                         } else {
                             newRecords++;
-                            logger.debug("New T-Bank bond: {} (FIGI: {})", ticker, figi);
+                            log.debug("New T-Bank bond: {} (FIGI: {})", ticker, figi);
                         }
                         
                         tBankBondRepository.saveOrUpdate(tBankBond);
                         updated++;
                         
-                        logger.debug("Processed T-Bank bond: {} (FIGI: {})", ticker, figi);
+                        log.debug("Processed T-Bank bond: {} (FIGI: {})", ticker, figi);
                     }
                 } catch (Exception e) {
-                    logger.debug("Error processing instrument: {}", e.getMessage());
+                    log.debug("Error processing instrument: {}", e.getMessage());
                 }
             }
             
-            logger.info("T-Bank instruments statistics - Processed: {}, Updated: {}, New records: {}", processed, updated, newRecords);
+            log.info("T-Bank instruments statistics - Processed: {}, Updated: {}, New records: {}", processed, updated, newRecords);
             
         } else {
-            logger.error("Failed to load instruments: {}", response.getStatusCode());
+            log.error("Failed to load instruments: {}", response.getStatusCode());
         }
     }
 

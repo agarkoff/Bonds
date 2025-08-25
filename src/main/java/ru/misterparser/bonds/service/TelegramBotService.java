@@ -1,8 +1,7 @@
 package ru.misterparser.bonds.service;
 
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,9 +26,9 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TelegramBotService extends TelegramLongPollingBot {
 
-    private static final Logger logger = LoggerFactory.getLogger(TelegramBotService.class);
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
     @Value("${telegram.bot.token:}")
@@ -45,9 +44,9 @@ public class TelegramBotService extends TelegramLongPollingBot {
     @PostConstruct
     public void init() {
         if (botToken == null || botToken.trim().isEmpty()) {
-            logger.warn("BOT_TOKEN не настроен, Telegram бот отключен");
+            log.warn("BOT_TOKEN не настроен, Telegram бот отключен");
         } else {
-            logger.info("Telegram бот инициализирован: {}", botUsername);
+            log.info("Telegram бот инициализирован: {}", botUsername);
         }
     }
 
@@ -75,7 +74,7 @@ public class TelegramBotService extends TelegramLongPollingBot {
         User user = message.getFrom();
         String username = user.getUserName() != null ? user.getUserName() : user.getFirstName();
 
-        logger.info("Получено сообщение от {} ({}): {}", username, chatId, messageText);
+        log.info("Получено сообщение от {} ({}): {}", username, chatId, messageText);
 
         try {
             if (messageText.startsWith("/")) {
@@ -85,7 +84,7 @@ public class TelegramBotService extends TelegramLongPollingBot {
                 handleIsinInput(message, chatId, username, messageText);
             }
         } catch (Exception e) {
-            logger.error("Ошибка при обработке сообщения", e);
+            log.error("Ошибка при обработке сообщения", e);
             sendMessage(chatId, "❌ Произошла ошибка при обработке команды. Попробуйте позже.");
         }
     }
@@ -352,7 +351,7 @@ public class TelegramBotService extends TelegramLongPollingBot {
             sendMessage(chatId, message.toString());
             
         } catch (Exception e) {
-            logger.error("Ошибка при получении списка ближайших оферт", e);
+            log.error("Ошибка при получении списка ближайших оферт", e);
             sendMessage(chatId, "❌ Произошла ошибка при получении списка оферт. Попробуйте позже.");
         }
     }
@@ -368,7 +367,7 @@ public class TelegramBotService extends TelegramLongPollingBot {
             message.setParseMode("Markdown");
             execute(message);
         } catch (TelegramApiException e) {
-            logger.error("Ошибка отправки сообщения в чат {}: {}", chatId, e.getMessage());
+            log.error("Ошибка отправки сообщения в чат {}: {}", chatId, e.getMessage());
         }
     }
 

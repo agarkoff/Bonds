@@ -3,8 +3,7 @@ package ru.misterparser.bonds.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -26,9 +25,9 @@ import java.util.Random;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TBankMarketDataService {
 
-    private static final Logger logger = LoggerFactory.getLogger(TBankMarketDataService.class);
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final RestTemplate restTemplate = new RestTemplate();
     private final RateLimitService rateLimitService = new RateLimitService();
@@ -43,31 +42,31 @@ public class TBankMarketDataService {
     @Transactional
     public void updatePrices() {
         if (!tBankConfig.isEnabled()) {
-            logger.info("T-Bank prices update is disabled");
+            log.info("T-Bank prices update is disabled");
             return;
         }
 
         if (tBankConfig.getToken() == null || tBankConfig.getToken().trim().isEmpty()) {
-            logger.error("T-Bank token is not configured");
+            log.error("T-Bank token is not configured");
             return;
         }
 
         // В режиме тестирования пропускаем проверку торговых часов
         boolean isTestMode = isTestMode();
         if (!isTestMode && !isMarketHours()) {
-            logger.info("Outside market hours, skipping price update");
+            log.info("Outside market hours, skipping price update");
             return;
         }
 
         if (isTestMode) {
-            logger.info("Starting T-Bank prices update in TEST mode with random prices");
+            log.info("Starting T-Bank prices update in TEST mode with random prices");
         } else {
-            logger.info("Starting T-Bank prices update during market hours");
+            log.info("Starting T-Bank prices update during market hours");
         }
 
         try {
             List<TBankBondWithFaceValue> bonds = tBankBondRepository.findAllWithFaceValues();
-            logger.info("Found {} bonds with FIGI for price update", bonds.size());
+            log.info("Found {} bonds with FIGI for price update", bonds.size());
 
             int updated = 0;
             int skipped = 0;
@@ -78,7 +77,7 @@ public class TBankMarketDataService {
                     // Проверяем наличие face_value из moex_bonds
                     if (bond.getFaceValue() == null) {
                         skipped++;
-                        logger.info("Skipping price update for FIGI {} (ticker {}): face_value not found in moex_bonds", 
+                        log.info("Skipping price update for FIGI {} (ticker {}): face_value not found in moex_bonds", 
                                 bond.getFigi(), bond.getTicker());
                         continue;
                     }
@@ -97,21 +96,21 @@ public class TBankMarketDataService {
                         
                         tBankPriceRepository.saveOrUpdate(tBankPrice);
                         updated++;
-                        logger.debug("Updated price for FIGI {}: {}", bond.getFigi(), price);
+                        log.debug("Updated price for FIGI {}: {}", bond.getFigi(), price);
                     } else {
                         skipped++;
-                        logger.debug("No market price available for FIGI {}", bond.getFigi());
+                        log.debug("No market price available for FIGI {}", bond.getFigi());
                     }
                 } catch (Exception e) {
                     errors++;
-                    logger.debug("Error updating price for FIGI {}: {}", bond.getFigi(), e.getMessage());
+                    log.debug("Error updating price for FIGI {}: {}", bond.getFigi(), e.getMessage());
                 }
             }
 
-            logger.info("T-Bank prices statistics - Updated: {}, Skipped: {}, Errors: {}", updated, skipped, errors);
+            log.info("T-Bank prices statistics - Updated: {}, Skipped: {}, Errors: {}", updated, skipped, errors);
 
         } catch (Exception e) {
-            logger.error("Error during T-Bank prices update", e);
+            log.error("Error during T-Bank prices update", e);
         }
     }
     
@@ -148,7 +147,7 @@ public class TBankMarketDataService {
         BigDecimal price = faceValue.multiply(BigDecimal.valueOf(randomPercent))
                 .divide(BigDecimal.valueOf(100), 8, RoundingMode.HALF_UP);
         
-        logger.debug("Generated random price for face_value {}: {} ({}%)", 
+        log.debug("Generated random price for face_value {}: {} ({}%)", 
                 faceValue, price, String.format("%.2f", randomPercent));
         
         return price;
@@ -194,10 +193,10 @@ public class TBankMarketDataService {
                     return absolutePrice;
                 }
             } else {
-                logger.info("Стакан для покупки пуст для ticker: {}", bond.getTicker());
+                log.info("Стакан для покупки пуст для ticker: {}", bond.getTicker());
             }
         } else {
-            logger.info("Неожиданный код ответа от T-Bank: {}", response.getStatusCode());
+            log.info("Неожиданный код ответа от T-Bank: {}", response.getStatusCode());
         }
 
         return null;

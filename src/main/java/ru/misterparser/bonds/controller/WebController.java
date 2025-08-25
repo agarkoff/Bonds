@@ -1,8 +1,7 @@
 package ru.misterparser.bonds.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,9 +14,8 @@ import java.util.List;
 
 @Controller
 @RequiredArgsConstructor
+@Slf4j
 public class WebController {
-
-    private static final Logger logger = LoggerFactory.getLogger(WebController.class);
 
     private final BondFilteringService bondFilteringService;
 
@@ -84,7 +82,7 @@ public class WebController {
                 }
             }
             
-            logger.info("Loading top bonds page with limit: {}, weeksToMaturity: '{}' (parsed: {}-{}), showOffer: {}, searchText: '{}', feePercent: {}, yieldRange: '{}' (parsed: {}-{})", 
+            log.info("Loading top bonds page with limit: {}, weeksToMaturity: '{}' (parsed: {}-{}), showOffer: {}, searchText: '{}', feePercent: {}, yieldRange: '{}' (parsed: {}-{})", 
                        limit, weeksToMaturity, minWeeksToMaturity, maxWeeksToMaturity, showOffer, searchText, feePercent, yieldRange, minYield, maxYield);
             
             // Создаём параметры фильтрации  
@@ -117,7 +115,7 @@ public class WebController {
             return "top-bonds";
             
         } catch (Exception e) {
-            logger.error("Error loading top bonds page", e);
+            log.error("Error loading top bonds page", e);
             model.addAttribute("error", "Ошибка загрузки данных: " + e.getMessage());
             return "error";
         }

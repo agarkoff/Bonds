@@ -1,8 +1,7 @@
 package ru.misterparser.bonds.service;
 
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.misterparser.bonds.model.Bond;
@@ -21,9 +20,9 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RatingNotificationService {
 
-    private static final Logger logger = LoggerFactory.getLogger(RatingNotificationService.class);
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
     private final RatingSubscriptionRepository subscriptionRepository;
@@ -38,22 +37,22 @@ public class RatingNotificationService {
      */
     @Transactional
     public void processRatingSubscriptions() {
-        logger.info("Начинаем обработку подписок на рейтинг...");
+        log.info("Начинаем обработку подписок на рейтинг...");
         
         List<RatingSubscription> subscriptionsToSend = subscriptionRepository.findSubscriptionsToSend();
         
-        logger.info("Найдено {} подписок для обработки", subscriptionsToSend.size());
+        log.info("Найдено {} подписок для обработки", subscriptionsToSend.size());
         
         for (RatingSubscription subscription : subscriptionsToSend) {
             try {
                 sendSubscriptionNotification(subscription, false);
             } catch (Exception e) {
-                logger.error("Ошибка при отправке уведомления по подписке {}: {}", 
+                log.error("Ошибка при отправке уведомления по подписке {}: {}", 
                            subscription.getId(), e.getMessage(), e);
             }
         }
         
-        logger.info("Обработка подписок на рейтинг завершена");
+        log.info("Обработка подписок на рейтинг завершена");
     }
 
     /**
@@ -65,13 +64,13 @@ public class RatingNotificationService {
             // Получаем пользователя
             Optional<TelegramUser> userOpt = telegramUserRepository.findById(subscription.getTelegramUserId());
             if (userOpt.isEmpty()) {
-                logger.warn("Пользователь не найден для подписки {}", subscription.getId());
+                log.warn("Пользователь не найден для подписки {}", subscription.getId());
                 return;
             }
             
             TelegramUser user = userOpt.get();
             if (!user.isEnabled()) {
-                logger.debug("Пользователь {} отключен, пропускаем отправку", user.getId());
+                log.debug("Пользователь {} отключен, пропускаем отправку", user.getId());
                 return;
             }
 
@@ -79,7 +78,7 @@ public class RatingNotificationService {
             List<Bond> bonds = getFilteredBonds(subscription);
             
             if (bonds.isEmpty()) {
-                logger.debug("Нет облигаций, соответствующих фильтрам подписки {}", subscription.getId());
+                log.debug("Нет облигаций, соответствующих фильтрам подписки {}", subscription.getId());
                 if (forceMode) {
                     // В режиме принудительной отправки отправляем сообщение о том, что нет подходящих облигаций
                     sendEmptyResultMessage(user.getTelegramId(), subscription);
@@ -98,11 +97,11 @@ public class RatingNotificationService {
             // Обновляем время последней отправки
             subscriptionRepository.updateLastSentAt(subscription.getId(), LocalDateTime.now());
             
-            logger.info("Отправлено уведомление по подписке {} пользователю {} ({} облигаций)", 
+            log.info("Отправлено уведомление по подписке {} пользователю {} ({} облигаций)", 
                        subscription.getId(), user.getId(), limitedBonds.size());
 
         } catch (Exception e) {
-            logger.error("Ошибка при отправке уведомления по подписке {}: {}", 
+            log.error("Ошибка при отправке уведомления по подписке {}: {}", 
                        subscription.getId(), e.getMessage(), e);
         }
     }

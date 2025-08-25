@@ -1,8 +1,7 @@
 package ru.misterparser.bonds.service;
 
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,9 +18,9 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OfferNotificationScheduler {
 
-    private static final Logger logger = LoggerFactory.getLogger(OfferNotificationScheduler.class);
     private static final int NOTIFICATION_DAYS = 14; // 2 недели
 
     private final OfferSubscriptionRepository subscriptionRepository;
@@ -34,14 +33,14 @@ public class OfferNotificationScheduler {
     @Scheduled(cron = "0 0 9 * * ?", zone = "Europe/Moscow")
     @Transactional
     public void sendDailyOfferNotifications() {
-        logger.info("Запуск ежедневной отправки уведомлений о приближающихся офертах");
+        log.info("Запуск ежедневной отправки уведомлений о приближающихся офертах");
 
         try {
             // Получаем все подписки с приближающимися офертами
             List<OfferSubscription> subscriptions = subscriptionRepository.findSubscriptionsWithOffersInDays(NOTIFICATION_DAYS);
             
             if (subscriptions.isEmpty()) {
-                logger.info("Нет подписок с приближающимися офертами");
+                log.info("Нет подписок с приближающимися офертами");
                 return;
             }
 
@@ -67,17 +66,17 @@ public class OfferNotificationScheduler {
                 try {
                     telegramBotService.sendOfferNotification(chatId, bonds);
                     sentNotifications++;
-                    logger.debug("Отправлено уведомление пользователю {} о {} облигациях", chatId, bonds.size());
+                    log.debug("Отправлено уведомление пользователю {} о {} облигациях", chatId, bonds.size());
                 } catch (Exception e) {
-                    logger.error("Ошибка отправки уведомления пользователю {}: {}", chatId, e.getMessage());
+                    log.error("Ошибка отправки уведомления пользователю {}: {}", chatId, e.getMessage());
                 }
             }
 
-            logger.info("Завершена отправка уведомлений. Отправлено: {} пользователям, всего облигаций: {}", 
+            log.info("Завершена отправка уведомлений. Отправлено: {} пользователям, всего облигаций: {}", 
                        sentNotifications, subscriptions.size());
 
         } catch (Exception e) {
-            logger.error("Ошибка при выполнении ежедневной отправки уведомлений", e);
+            log.error("Ошибка при выполнении ежедневной отправки уведомлений", e);
         }
     }
 
@@ -86,7 +85,7 @@ public class OfferNotificationScheduler {
      */
     @Transactional
     public void sendTestNotifications() {
-        logger.info("Запуск тестовой отправки уведомлений");
+        log.info("Запуск тестовой отправки уведомлений");
         sendDailyOfferNotifications();
     }
 }

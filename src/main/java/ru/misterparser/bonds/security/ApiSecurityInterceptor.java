@@ -1,8 +1,7 @@
 package ru.misterparser.bonds.security;
 
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -17,9 +16,9 @@ import java.util.Arrays;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class ApiSecurityInterceptor implements HandlerInterceptor {
 
-    private static final Logger logger = LoggerFactory.getLogger(ApiSecurityInterceptor.class);
     private static final Long AUTHORIZED_USER_ID = 1L;
     
     private final TelegramAuthService telegramAuthService;
@@ -36,33 +35,33 @@ public class ApiSecurityInterceptor implements HandlerInterceptor {
 
         // Отключаем авторизацию для профиля 'test'
         if (Arrays.asList(environment.getActiveProfiles()).contains("test")) {
-            logger.debug("API security disabled for test profile: {}", requestURI);
+            log.debug("API security disabled for test profile: {}", requestURI);
             return true;
         }
 
-        logger.debug("API security check for: {}", requestURI);
+        log.debug("API security check for: {}", requestURI);
 
         try {
             // Получаем текущего пользователя через сессию
             TelegramUser currentUser = telegramAuthService.getCurrentUserFromSession(request);
             
             if (currentUser == null) {
-                logger.warn("Unauthorized API access attempt to: {}", requestURI);
+                log.warn("Unauthorized API access attempt to: {}", requestURI);
                 sendUnauthorizedResponse(response, "Пользователь не авторизован");
                 return false;
             }
 
             if (!AUTHORIZED_USER_ID.equals(currentUser.getId())) {
-                logger.warn("Forbidden API access attempt by user ID {} to: {}", currentUser.getId(), requestURI);
+                log.warn("Forbidden API access attempt by user ID {} to: {}", currentUser.getId(), requestURI);
                 sendForbiddenResponse(response, "Доступ запрещен: требуется пользователь с ID " + AUTHORIZED_USER_ID);
                 return false;
             }
 
-            logger.debug("API access granted for user ID {} to: {}", currentUser.getId(), requestURI);
+            log.debug("API access granted for user ID {} to: {}", currentUser.getId(), requestURI);
             return true;
 
         } catch (Exception e) {
-            logger.error("Error during API security check for: {}", requestURI, e);
+            log.error("Error during API security check for: {}", requestURI, e);
             sendInternalErrorResponse(response, "Ошибка проверки авторизации");
             return false;
         }

@@ -1,13 +1,12 @@
 package ru.misterparser.bonds.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.misterparser.bonds.config.DohodConfig;
@@ -21,9 +20,9 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class DohodService {
 
-    private static final Logger logger = LoggerFactory.getLogger(DohodService.class);
     private static final String BASE_URL = "https://www.dohod.ru/analytic/bonds";
 
     private final DohodConfig dohodConfig;
@@ -33,11 +32,11 @@ public class DohodService {
     @Transactional
     public void updateRatings() {
         if (!dohodConfig.isEnabled()) {
-            logger.info("Dohod ratings update is disabled");
+            log.info("Dohod ratings update is disabled");
             return;
         }
 
-        logger.info("Starting Dohod ratings update");
+        log.info("Starting Dohod ratings update");
 
         WebDriver driver = null;
         try {
@@ -49,10 +48,10 @@ public class DohodService {
             try {
                 WebElement cookieButton = driver.findElement(By.cssSelector("span.cookiemsg__bottom_close"));
                 cookieButton.click();
-                logger.debug("Cookie consent accepted");
+                log.debug("Cookie consent accepted");
                 Thread.sleep(1000); // Небольшая пауза после закрытия cookie-баннера
             } catch (Exception e) {
-                logger.debug("Cookie consent button not found or already accepted: {}", e.getMessage());
+                log.debug("Cookie consent button not found or already accepted: {}", e.getMessage());
             }
             
             int processed = 0;
@@ -61,12 +60,12 @@ public class DohodService {
             int pageNumber = 1;
 
             while (true) {
-                logger.info("Processing page {}", pageNumber);
+                log.info("Processing page {}", pageNumber);
                 
                 List<WebElement> bondRows = driver.findElements(By.cssSelector("tr.bonds__item"));
                 
                 if (bondRows.isEmpty()) {
-                    logger.info("No more bond items found on page {}", pageNumber);
+                    log.info("No more bond items found on page {}", pageNumber);
                     break;
                 }
 
@@ -88,15 +87,15 @@ public class DohodService {
 
                                 dohodRatingRepository.saveOrUpdate(rating);
                                 successful++;
-                                logger.debug("Successfully processed rating for ISIN: {}, Rating: {}", isin, ratingValue);
+                                log.debug("Successfully processed rating for ISIN: {}, Rating: {}", isin, ratingValue);
                             } else {
-                                logger.debug("Skipping rating for ISIN {}: not found in tbank_bonds", isin);
+                                log.debug("Skipping rating for ISIN {}: not found in tbank_bonds", isin);
                             }
                         }
 
                     } catch (Exception e) {
                         errors++;
-                        logger.debug("Error processing bond row on page {}: {}", pageNumber, e.getMessage());
+                        log.debug("Error processing bond row on page {}: {}", pageNumber, e.getMessage());
                     }
                 }
 
@@ -106,7 +105,7 @@ public class DohodService {
                     WebElement nextButton = currentButton.findElement(By.xpath("following-sibling::a[1]"));
                     
                     if (nextButton == null || nextButton.getAttribute("class").contains("disabled")) {
-                        logger.info("Reached last page");
+                        log.info("Reached last page");
                         break;
                     }
                     
@@ -117,16 +116,16 @@ public class DohodService {
                     Thread.sleep(dohodConfig.getDelays().getPageInterval() * 1000);
                     
                 } catch (Exception e) {
-                    logger.info("No next page button found or unable to navigate to next page");
+                    log.info("No next page button found or unable to navigate to next page");
                     break;
                 }
             }
 
-            logger.info("Dohod ratings update completed - Processed: {}, Successful: {}, Errors: {}, Pages: {}", 
+            log.info("Dohod ratings update completed - Processed: {}, Successful: {}, Errors: {}, Pages: {}", 
                     processed, successful, errors, pageNumber);
 
         } catch (Exception e) {
-            logger.error("Error during Dohod ratings update", e);
+            log.error("Error during Dohod ratings update", e);
         } finally {
             if (driver != null) {
                 driver.quit();
@@ -155,7 +154,7 @@ public class DohodService {
             WebElement shortnameCell = row.findElement(By.cssSelector("td.shortname"));
             return shortnameCell.getAttribute("data-open-isin");
         } catch (Exception e) {
-            logger.debug("Error extracting ISIN: {}", e.getMessage());
+            log.debug("Error extracting ISIN: {}", e.getMessage());
             return null;
         }
     }
@@ -166,7 +165,7 @@ public class DohodService {
             WebElement ratingSpan = ratingCell.findElement(By.tagName("span"));
             return "ru" + ratingSpan.getText().trim();
         } catch (Exception e) {
-            logger.debug("Error extracting rating: {}", e.getMessage());
+            log.debug("Error extracting rating: {}", e.getMessage());
             return null;
         }
     }

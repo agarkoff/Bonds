@@ -1,8 +1,7 @@
 package ru.misterparser.bonds.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -22,9 +21,8 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/subscriptions")
 @RequiredArgsConstructor
+@Slf4j
 public class SubscriptionController {
-
-    private static final Logger logger = LoggerFactory.getLogger(SubscriptionController.class);
 
     private final RatingSubscriptionRepository subscriptionRepository;
     private final TelegramAuthService telegramAuthService;
@@ -51,13 +49,13 @@ public class SubscriptionController {
             // Сохраняем подписку
             RatingSubscription savedSubscription = subscriptionRepository.save(subscription);
             
-            logger.info("Создана новая подписка на рейтинг для пользователя {}: {}", 
+            log.info("Создана новая подписка на рейтинг для пользователя {}: {}", 
                        currentUser.getId(), savedSubscription.getName());
 
             return ResponseEntity.ok(savedSubscription);
 
         } catch (Exception e) {
-            logger.error("Ошибка при создании подписки на рейтинг", e);
+            log.error("Ошибка при создании подписки на рейтинг", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Ошибка при создании подписки: " + e.getMessage()));
         }
@@ -79,7 +77,7 @@ public class SubscriptionController {
             return ResponseEntity.ok(subscriptions);
 
         } catch (Exception e) {
-            logger.error("Ошибка при получении подписок", e);
+            log.error("Ошибка при получении подписок", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Ошибка при получении подписок"));
         }
@@ -111,7 +109,7 @@ public class SubscriptionController {
             return ResponseEntity.ok(subscription.get());
 
         } catch (Exception e) {
-            logger.error("Ошибка при получении подписки", e);
+            log.error("Ошибка при получении подписки", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Ошибка при получении подписки"));
         }
@@ -142,13 +140,13 @@ public class SubscriptionController {
 
             subscriptionRepository.deleteById(id);
             
-            logger.info("Удалена подписка на рейтинг для пользователя {}: {}", 
+            log.info("Удалена подписка на рейтинг для пользователя {}: {}", 
                        currentUser.getId(), subscription.get().getName());
 
             return ResponseEntity.ok(Map.of("message", "Подписка удалена"));
 
         } catch (Exception e) {
-            logger.error("Ошибка при удалении подписки", e);
+            log.error("Ошибка при удалении подписки", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Ошибка при удалении подписки"));
         }
@@ -180,14 +178,14 @@ public class SubscriptionController {
             boolean newStatus = !subscription.get().isEnabled();
             subscriptionRepository.setEnabled(id, newStatus);
             
-            logger.info("Подписка на рейтинг для пользователя {} {}: {}", 
+            log.info("Подписка на рейтинг для пользователя {} {}: {}", 
                        currentUser.getId(), newStatus ? "включена" : "выключена", subscription.get().getName());
 
             return ResponseEntity.ok(Map.of("enabled", newStatus, "message", 
                 newStatus ? "Подписка включена" : "Подписка выключена"));
 
         } catch (Exception e) {
-            logger.error("Ошибка при переключении подписки", e);
+            log.error("Ошибка при переключении подписки", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Ошибка при переключении подписки"));
         }
@@ -222,13 +220,13 @@ public class SubscriptionController {
             // Обновляем время последней отправки
             subscriptionRepository.updateLastSentAt(id, LocalDateTime.now());
             
-            logger.info("Принудительная отправка подписки на рейтинг для пользователя {}: {}", 
+            log.info("Принудительная отправка подписки на рейтинг для пользователя {}: {}", 
                        currentUser.getId(), subscription.get().getName());
 
             return ResponseEntity.ok(Map.of("message", "Уведомления отправлены"));
 
         } catch (Exception e) {
-            logger.error("Ошибка при принудительной отправке", e);
+            log.error("Ошибка при принудительной отправке", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Ошибка при отправке уведомлений"));
         }
@@ -268,13 +266,13 @@ public class SubscriptionController {
             // Обновляем название
             subscriptionRepository.updateName(id, newName.trim());
             
-            logger.info("Обновлено название подписки для пользователя {}: {} -> {}", 
+            log.info("Обновлено название подписки для пользователя {}: {} -> {}", 
                        currentUser.getId(), subscription.get().getName(), newName.trim());
 
             return ResponseEntity.ok(Map.of("message", "Название подписки обновлено", "name", newName.trim()));
 
         } catch (Exception e) {
-            logger.error("Ошибка при обновлении подписки", e);
+            log.error("Ошибка при обновлении подписки", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Ошибка при обновлении подписки"));
         }

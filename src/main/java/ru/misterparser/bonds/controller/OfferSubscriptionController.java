@@ -1,8 +1,7 @@
 package ru.misterparser.bonds.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -19,9 +18,8 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/offer-subscriptions")
 @RequiredArgsConstructor
+@Slf4j
 public class OfferSubscriptionController {
-
-    private static final Logger logger = LoggerFactory.getLogger(OfferSubscriptionController.class);
 
     private final OfferSubscriptionRepository offerSubscriptionRepository;
     private final TelegramAuthService telegramAuthService;
@@ -42,7 +40,7 @@ public class OfferSubscriptionController {
             return ResponseEntity.ok(subscriptions);
 
         } catch (Exception e) {
-            logger.error("Ошибка при получении подписок на оферты", e);
+            log.error("Ошибка при получении подписок на оферты", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Ошибка при получении подписок на оферты"));
         }
@@ -75,7 +73,7 @@ public class OfferSubscriptionController {
             boolean deleted = offerSubscriptionRepository.removeSubscription(currentUser.getTelegramId(), subscription.get().getIsin());
             
             if (deleted) {
-                logger.info("Удалена подписка на оферту для пользователя {}: {}", 
+                log.info("Удалена подписка на оферту для пользователя {}: {}", 
                            currentUser.getId(), subscription.get().getIsin());
                 return ResponseEntity.ok(Map.of("message", "Подписка на оферту удалена"));
             } else {
@@ -84,7 +82,7 @@ public class OfferSubscriptionController {
             }
 
         } catch (Exception e) {
-            logger.error("Ошибка при удалении подписки на оферту", e);
+            log.error("Ошибка при удалении подписки на оферту", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Ошибка при удалении подписки на оферту"));
         }

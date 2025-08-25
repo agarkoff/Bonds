@@ -1,8 +1,7 @@
 package ru.misterparser.bonds.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.misterparser.bonds.model.Bond;
@@ -14,9 +13,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
+@Slf4j
 public class ApiController {
-
-    private static final Logger logger = LoggerFactory.getLogger(ApiController.class);
 
     private final MoexService moexService;
     private final TBankInstrumentsService tBankInstrumentsService;
@@ -28,36 +26,36 @@ public class ApiController {
 
     @PostMapping("/moex/bonds/parse")  
     public ResponseEntity<String> parseMoex() {
-        logger.info("Manual MOEX parsing triggered");
+        log.info("Manual MOEX parsing triggered");
         try {
             moexService.parseBonds();
             return ResponseEntity.ok("MOEX parsing completed successfully");
         } catch (Exception e) {
-            logger.error("Error during manual MOEX parsing", e);
+            log.error("Error during manual MOEX parsing", e);
             return ResponseEntity.status(500).body("Error during MOEX parsing: " + e.getMessage());
         }
     }
 
     @PostMapping("/tbank/bonds/parse")
     public ResponseEntity<String> updateTBankBonds() {
-        logger.info("Manual T-Bank bonds update triggered");
+        log.info("Manual T-Bank bonds update triggered");
         try {
             tBankInstrumentsService.updateBondsData();
             return ResponseEntity.ok("T-Bank bonds update completed successfully");
         } catch (Exception e) {
-            logger.error("Error during manual T-Bank bonds update", e);
+            log.error("Error during manual T-Bank bonds update", e);
             return ResponseEntity.status(500).body("Error during T-Bank bonds update: " + e.getMessage());
         }
     }
 
     @PostMapping("/tbank/prices/parse")
     public ResponseEntity<String> updateTBankPrices() {
-        logger.info("Manual T-Bank prices update triggered");
+        log.info("Manual T-Bank prices update triggered");
         try {
             tBankMarketDataService.updatePrices();
             return ResponseEntity.ok("T-Bank prices update completed successfully");
         } catch (Exception e) {
-            logger.error("Error during manual T-Bank prices update", e);
+            log.error("Error during manual T-Bank prices update", e);
             return ResponseEntity.status(500).body("Error during T-Bank prices update: " + e.getMessage());
         }
     }
@@ -68,55 +66,55 @@ public class ApiController {
             List<Bond> bonds = bondRepository.findTopByAnnualYield(limit);
             return ResponseEntity.ok(bonds);
         } catch (Exception e) {
-            logger.error("Error getting top bonds", e);
+            log.error("Error getting top bonds", e);
             return ResponseEntity.status(500).build();
         }
     }
 
     @PostMapping("/ratings/raexpert/update")
     public ResponseEntity<String> updateRaExpertRatings() {
-        logger.info("Manual RaExpert ratings update triggered");
+        log.info("Manual RaExpert ratings update triggered");
         try {
             raExpertService.updateRatings();
             return ResponseEntity.ok("RaExpert ratings update completed successfully");
         } catch (Exception e) {
-            logger.error("Error during manual RaExpert ratings update", e);
+            log.error("Error during manual RaExpert ratings update", e);
             return ResponseEntity.status(500).body("Error during RaExpert ratings update: " + e.getMessage());
         }
     }
 
     @PostMapping("/ratings/dohod/update")
     public ResponseEntity<String> updateDohodRatings() {
-        logger.info("Manual Dohod ratings update triggered");
+        log.info("Manual Dohod ratings update triggered");
         try {
             dohodService.updateRatings();
             return ResponseEntity.ok("Dohod ratings update completed successfully");
         } catch (Exception e) {
-            logger.error("Error during manual Dohod ratings update", e);
+            log.error("Error during manual Dohod ratings update", e);
             return ResponseEntity.status(500).body("Error during Dohod ratings update: " + e.getMessage());
         }
     }
 
     @PostMapping("/bonds/calculate")
     public ResponseEntity<String> calculateBonds() {
-        logger.info("Manual bonds calculation triggered");
+        log.info("Manual bonds calculation triggered");
         try {
             calculationService.calculateAllBonds();
             return ResponseEntity.ok("Bonds calculation completed successfully");
         } catch (Exception e) {
-            logger.error("Error during manual bonds calculation", e);
+            log.error("Error during manual bonds calculation", e);
             return ResponseEntity.status(500).body("Error during bonds calculation: " + e.getMessage());
         }
     }
 
     @PostMapping("/bonds/calculate/{isin}")
     public ResponseEntity<String> calculateBond(@PathVariable String isin) {
-        logger.info("Manual bond calculation triggered for ISIN: {}", isin);
+        log.info("Manual bond calculation triggered for ISIN: {}", isin);
         try {
             calculationService.calculateBond(isin);
             return ResponseEntity.ok("Bond calculation completed successfully for ISIN: " + isin);
         } catch (Exception e) {
-            logger.error("Error during manual bond calculation for ISIN: {}", isin, e);
+            log.error("Error during manual bond calculation for ISIN: {}", isin, e);
             return ResponseEntity.status(500).body("Error during bond calculation: " + e.getMessage());
         }
     }

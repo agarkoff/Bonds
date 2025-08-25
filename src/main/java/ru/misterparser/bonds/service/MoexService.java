@@ -6,8 +6,7 @@ import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import com.opencsv.exceptions.CsvException;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.misterparser.bonds.config.MoexConfig;
@@ -26,9 +25,9 @@ import java.util.*;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MoexService {
 
-    private static final Logger logger = LoggerFactory.getLogger(MoexService.class);
     private static final Charset CP1251 = Charset.forName("CP1251");
     private static final DateTimeFormatter DATE_FORMAT_1 = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private static final DateTimeFormatter DATE_FORMAT_2 = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -39,29 +38,29 @@ public class MoexService {
     @Transactional
     public void parseBonds() {
         if (!moexConfig.isEnabled()) {
-            logger.info("MOEX parsing is disabled");
+            log.info("MOEX parsing is disabled");
             return;
         }
 
-        logger.info("Starting MOEX bonds parsing from URL");
+        log.info("Starting MOEX bonds parsing from URL");
         
         try {
             List<String[]> csvData = loadCsvData();
             if (csvData.isEmpty()) {
-                logger.error("No data loaded from CSV");
+                log.error("No data loaded from CSV");
                 return;
             }
 
             processCsvData(csvData);
-            logger.info("MOEX bonds parsing completed successfully");
+            log.info("MOEX bonds parsing completed successfully");
             
         } catch (Exception e) {
-            logger.error("Error during MOEX parsing", e);
+            log.error("Error during MOEX parsing", e);
         }
     }
 
     private List<String[]> loadCsvData() throws IOException, CsvException {
-        logger.info("Loading CSV data from URL: {}", moexConfig.getCsvUrl());
+        log.info("Loading CSV data from URL: {}", moexConfig.getCsvUrl());
         
         URL url = new URL(moexConfig.getCsvUrl());
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -82,12 +81,12 @@ public class MoexService {
     private void processCsvData(List<String[]> csvData) {
         String[] headers = findHeaders(csvData);
         if (headers == null) {
-            logger.error("Headers not found in CSV data");
+            log.error("Headers not found in CSV data");
             return;
         }
 
         Map<String, Integer> columnIndexes = mapColumns(headers);
-        logger.debug("Found columns: {}", columnIndexes);
+        log.debug("Found columns: {}", columnIndexes);
 
         int processed = 0;
         int successful = 0;
@@ -109,7 +108,7 @@ public class MoexService {
                     if (validation.isValid()) {
                         moexBondRepository.saveOrUpdate(bond);
                         successful++;
-                        logger.debug("Processed bond: {}", bond.getIsin());
+                        log.debug("Processed bond: {}", bond.getIsin());
                     } else {
                         // Определяем тип ошибки валидации для статистики
                         String reason = validation.getReason();
@@ -118,7 +117,7 @@ public class MoexService {
                         } else {
                             skippedNoCoupon++;
                         }
-                        logger.info("Облигация {} пропущена: {}", validation.getIsin(), reason);
+                        log.info("Облигация {} пропущена: {}", validation.getIsin(), reason);
                     }
                 } else {
                     // Проверим причину пропуска записи (null bond)
@@ -128,23 +127,23 @@ public class MoexService {
                     if (isin != null && !isin.trim().isEmpty()) {
                         if (!"RUB".equals(faceUnit)) {
                             filtered++;
-                            logger.debug("Filtered non-RUB bond: {} ({})", isin, faceUnit);
+                            log.debug("Filtered non-RUB bond: {} ({})", isin, faceUnit);
                         } else {
                             errors++;
-                            logger.debug("Skipped invalid bond: {}", isin);
+                            log.debug("Skipped invalid bond: {}", isin);
                         }
                     } else {
                         errors++;
-                        logger.debug("Skipped invalid row: {}", Arrays.toString(row));
+                        log.debug("Skipped invalid row: {}", Arrays.toString(row));
                     }
                 }
             } catch (Exception e) {
                 errors++;
-                logger.debug("Error processing row {}: {}", i, e.getMessage());
+                log.debug("Error processing row {}: {}", i, e.getMessage());
             }
         }
 
-        logger.info("MOEX parsing statistics - Processed: {}, Successful: {}, Filtered (non-RUB): {}, Skipped (no coupon data): {}, Skipped (no maturity date): {}, Errors: {}", 
+        log.info("MOEX parsing statistics - Processed: {}, Successful: {}, Filtered (non-RUB): {}, Skipped (no coupon data): {}, Skipped (no maturity date): {}, Errors: {}", 
                 processed, successful, filtered, skippedNoCoupon, skippedNoMaturityDate, errors);
     }
 
@@ -251,7 +250,7 @@ public class MoexService {
             // Фильтрация только рублевых облигаций
             String faceUnit = getValue(row, columnIndexes, "FACEUNIT");
             if (!"RUB".equals(faceUnit)) {
-                logger.debug("Skipping non-RUB bond: {} (currency: {})", isin, faceUnit);
+                log.debug("Skipping non-RUB bond: {} (currency: {})", isin, faceUnit);
                 return null;
             }
 
@@ -273,7 +272,7 @@ public class MoexService {
             return bond;
             
         } catch (Exception e) {
-            logger.debug("Error parsing row: {}", e.getMessage());
+            log.debug("Error parsing row: {}", e.getMessage());
             return null;
         }
     }
@@ -294,7 +293,7 @@ public class MoexService {
         try {
             return new BigDecimal(value.replace(",", "."));
         } catch (NumberFormatException e) {
-            logger.debug("Failed to parse BigDecimal: {}", value);
+            log.debug("Failed to parse BigDecimal: {}", value);
             return null;
         }
     }
@@ -306,7 +305,7 @@ public class MoexService {
         try {
             return Integer.parseInt(value);
         } catch (NumberFormatException e) {
-            logger.debug("Failed to parse Integer: {}", value);
+            log.debug("Failed to parse Integer: {}", value);
             return null;
         }
     }
@@ -321,7 +320,7 @@ public class MoexService {
             try {
                 return LocalDate.parse(value, DATE_FORMAT_2);
             } catch (Exception e2) {
-                logger.debug("Failed to parse date: {}", value);
+                log.debug("Failed to parse date: {}", value);
                 return null;
             }
         }

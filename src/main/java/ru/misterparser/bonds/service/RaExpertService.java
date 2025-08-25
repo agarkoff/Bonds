@@ -1,6 +1,7 @@
 package ru.misterparser.bonds.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -10,8 +11,6 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.misterparser.bonds.config.RaExpertConfig;
@@ -35,9 +34,9 @@ import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RaExpertService {
 
-    private static final Logger logger = LoggerFactory.getLogger(RaExpertService.class);
     private static final String BASE_URL = "https://raexpert.ru/ratings/debt_inst/";
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private static final Pattern ISIN_PATTERN = Pattern.compile("([A-Z]{2}[A-Z0-9]{10})");
@@ -49,11 +48,11 @@ public class RaExpertService {
     @Transactional
     public void updateRatings() {
         if (!raExpertConfig.isEnabled()) {
-            logger.info("RaExpert ratings update is disabled");
+            log.info("RaExpert ratings update is disabled");
             return;
         }
 
-        logger.info("Starting RaExpert ratings update");
+        log.info("Starting RaExpert ratings update");
 
         WebDriver driver = null;
         try {
@@ -62,7 +61,7 @@ public class RaExpertService {
             createCacheDirectory();
             
             List<String> bondUrls = collectBondUrls(driver);
-            logger.info("Found {} bond URLs to process", bondUrls.size());
+            log.info("Found {} bond URLs to process", bondUrls.size());
 
             int processed = 0;
             int successful = 0;
@@ -81,24 +80,24 @@ public class RaExpertService {
                             if (bondExists) {
                                 raExpertRatingRepository.saveOrUpdate(rating);
                                 successful++;
-                                logger.debug("Saved rating {} for ISIN {}", rating.getRatingValue(), rating.getIsin());
+                                log.debug("Saved rating {} for ISIN {}", rating.getRatingValue(), rating.getIsin());
                             } else {
-                                logger.debug("Skipping rating for ISIN {}: not found in tbank_bonds", rating.getIsin());
+                                log.debug("Skipping rating for ISIN {}: not found in tbank_bonds", rating.getIsin());
                             }
                         }
                     }
 
                 } catch (Exception e) {
                     errors++;
-                    logger.debug("Error processing bond URL {}: {}", bondUrl, e.getMessage());
+                    log.debug("Error processing bond URL {}: {}", bondUrl, e.getMessage());
                 }
             }
 
-            logger.info("RaExpert ratings update completed - Processed: {}, Successful: {}, Errors: {}", 
+            log.info("RaExpert ratings update completed - Processed: {}, Successful: {}, Errors: {}", 
                     processed, successful, errors);
 
         } catch (Exception e) {
-            logger.error("Error during RaExpert ratings update", e);
+            log.error("Error during RaExpert ratings update", e);
         } finally {
             if (driver != null) {
                 driver.quit();
@@ -138,7 +137,7 @@ public class RaExpertService {
 
             while (true) {
                 WebElement currentPaginator = driver.findElement(By.cssSelector("span.b-paginator__link.-active"));
-                logger.info("Текущая страница: {}", currentPaginator.getText());
+                log.info("Текущая страница: {}", currentPaginator.getText());
 
                 // Поиск ссылок на облигации в колонке "Эмиссия"
                 List<WebElement> as = driver.findElements(By.cssSelector("div.b-actions__rates table tbody tr > td > span:first-child > a"));
@@ -150,23 +149,23 @@ public class RaExpertService {
                             bondUrls.add(href);
                         }
                     } catch (Exception e) {
-                        logger.debug("Error processing table row: {}", e.getMessage());
+                        log.debug("Error processing table row: {}", e.getMessage());
                     }
                 }
 
                 WebElement nextPaginator = currentPaginator.findElement(By.xpath("following-sibling::*[1]"));
 
                 if (nextPaginator != null && !"»".equals(nextPaginator.getText())) {
-                    logger.info("Переход на страницу {}", ++pageIndex);
+                    log.info("Переход на страницу {}", ++pageIndex);
                     nextPaginator.click();
                     Thread.sleep(2000); // Пауза для загрузки страницы
                 } else {
-                    logger.info("Страницы кончились");
+                    log.info("Страницы кончились");
                     break;
                 }
             }
         } catch (Exception e) {
-            logger.error("Error collecting bond URLs", e);
+            log.error("Error collecting bond URLs", e);
         }
         
         return bondUrls;
@@ -187,7 +186,7 @@ public class RaExpertService {
             }
             
         } catch (Exception e) {
-            logger.debug("Error parsing bond page {}: {}", bondUrl, e.getMessage());
+            log.debug("Error parsing bond page {}: {}", bondUrl, e.getMessage());
         }
         
         return ratings;
@@ -203,7 +202,7 @@ public class RaExpertService {
             long maxAge = raExpertConfig.getCache().getExpiresDays() * 24 * 60 * 60 * 1000L;
             
             if (fileAge < maxAge) {
-                logger.debug("Loading from cache: {}", cacheFileName);
+                log.debug("Loading from cache: {}", cacheFileName);
                 return Files.readString(cacheFilePath, StandardCharsets.UTF_8);
             }
         }
@@ -214,7 +213,7 @@ public class RaExpertService {
         // Загружаем страницу
         driver.get(url);
         String pageContent = driver.getPageSource();
-        logger.info("Loaded from web: {}", url);
+        log.info("Loaded from web: {}", url);
         
         // Сохраняем в кэш
         Files.writeString(cacheFilePath, pageContent, StandardCharsets.UTF_8);
@@ -312,7 +311,7 @@ public class RaExpertService {
 
                                     ratings.add(rating);
                                 } catch (Exception e) {
-                                    logger.debug("Error parsing rating date: {}", dateStr);
+                                    log.debug("Error parsing rating date: {}", dateStr);
                                 }
                             }
                         }
@@ -320,7 +319,7 @@ public class RaExpertService {
                 }
             }
         } catch (Exception e) {
-            logger.error("Error parsing ratings from page content", e);
+            log.error("Error parsing ratings from page content", e);
         }
 
         return ratings;

@@ -1,7 +1,6 @@
 package ru.misterparser.bonds.service;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
@@ -18,9 +17,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Service
+@Slf4j
 public class RatingColorService {
 
-    private static final Logger logger = LoggerFactory.getLogger(RatingColorService.class);
     private List<String> colors = new ArrayList<>();
     private Map<String, String> ratingBalls = new HashMap<>();
 
@@ -38,10 +37,10 @@ public class RatingColorService {
             // Парсим JS файл для извлечения hex цветов
             parseColorsFromJS(content);
             
-            logger.info("Loaded {} colors from rating-gradient.js", colors.size());
+            log.info("Loaded {} colors from rating-gradient.js", colors.size());
             
         } catch (IOException e) {
-            logger.error("Failed to load rating-gradient.js, using default colors", e);
+            log.error("Failed to load rating-gradient.js, using default colors", e);
             loadDefaultColors();
         }
     }
@@ -57,7 +56,7 @@ public class RatingColorService {
         }
         
         if (colors.isEmpty()) {
-            logger.warn("No colors found in JS file, loading defaults");
+            log.warn("No colors found in JS file, loading defaults");
             loadDefaultColors();
         }
     }
@@ -165,7 +164,7 @@ public class RatingColorService {
             ClassPathResource resource = new ClassPathResource("rating-ball.md");
 
             if (!resource.exists()) {
-                logger.warn("Файл rating-ball.md не найден в resources, цветовые шары для рейтингов не будут отображаться");
+                log.warn("Файл rating-ball.md не найден в resources, цветовые шары для рейтингов не будут отображаться");
                 return;
             }
 
@@ -190,17 +189,17 @@ public class RatingColorService {
                         String balls = parts[1].trim();
 
                         ratingBalls.put(rating, balls);
-                        logger.debug("Загружен маппинг рейтинга: {} -> {}", rating, balls);
+                        log.debug("Загружен маппинг рейтинга: {} -> {}", rating, balls);
                     } else {
-                        logger.warn("Неверный формат строки {} в файле rating-ball.md: {}", lineNumber, line);
+                        log.warn("Неверный формат строки {} в файле rating-ball.md: {}", lineNumber, line);
                     }
                 }
 
-                logger.info("Загружено {} маппингов рейтингов из файла rating-ball.md", ratingBalls.size());
+                log.info("Загружено {} маппингов рейтингов из файла rating-ball.md", ratingBalls.size());
 
             }
         } catch (IOException e) {
-            logger.error("Ошибка при загрузке файла rating-ball.md", e);
+            log.error("Ошибка при загрузке файла rating-ball.md", e);
         }
     }
 

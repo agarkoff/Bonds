@@ -1,8 +1,7 @@
 package ru.misterparser.bonds.service;
 
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.misterparser.bonds.config.CalcConfig;
@@ -19,9 +18,9 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CalculationService {
 
-    private static final Logger logger = LoggerFactory.getLogger(CalculationService.class);
     private static final BigDecimal HUNDRED = new BigDecimal("100");
     private static final BigDecimal DAYS_IN_YEAR = new BigDecimal("365");
 
@@ -30,11 +29,11 @@ public class CalculationService {
 
     @Transactional
     public void calculateAllBonds() {
-        logger.info("Starting calculation for all bonds");
+        log.info("Starting calculation for all bonds");
 
         try {
             List<Bond> bonds = bondRepository.findAll();
-            logger.info("Found {} bonds to calculate", bonds.size());
+            log.info("Found {} bonds to calculate", bonds.size());
 
             int processed = 0;
             int calculated = 0;
@@ -47,28 +46,28 @@ public class CalculationService {
                         calculateBond(bond);
                         bondRepository.saveOrUpdateCalculationData(bond);
                         calculated++;
-                        logger.debug("Calculated bond: {}", bond.getIsin());
+                        log.debug("Calculated bond: {}", bond.getIsin());
                     } else {
                         skipped++;
-                        logger.debug("Skipped bond: {} (missing data)", bond.getIsin());
+                        log.debug("Skipped bond: {} (missing data)", bond.getIsin());
                     }
                 } catch (Exception e) {
                     skipped++;
-                    logger.debug("Error calculating bond {}: {}", bond.getIsin(), e.getMessage());
+                    log.debug("Error calculating bond {}: {}", bond.getIsin(), e.getMessage());
                 }
             }
 
-            logger.info("Calculation completed - Processed: {}, Calculated: {}, Skipped: {}", 
+            log.info("Calculation completed - Processed: {}, Calculated: {}, Skipped: {}", 
                     processed, calculated, skipped);
 
         } catch (Exception e) {
-            logger.error("Error during calculation", e);
+            log.error("Error during calculation", e);
         }
     }
 
     @Transactional
     public void calculateBond(String isin) {
-        logger.info("Starting calculation for bond: {}", isin);
+        log.info("Starting calculation for bond: {}", isin);
 
         try {
             Optional<Bond> optionalBond = bondRepository.findByIsin(isin);
@@ -77,15 +76,15 @@ public class CalculationService {
                 if (canCalculate(bond)) {
                     calculateBond(bond);
                     bondRepository.saveOrUpdateCalculationData(bond);
-                    logger.info("Calculation completed for bond: {}", isin);
+                    log.info("Calculation completed for bond: {}", isin);
                 } else {
-                    logger.warn("Cannot calculate bond {} - missing required data", isin);
+                    log.warn("Cannot calculate bond {} - missing required data", isin);
                 }
             } else {
-                logger.warn("Bond not found: {}", isin);
+                log.warn("Bond not found: {}", isin);
             }
         } catch (Exception e) {
-            logger.error("Error calculating bond {}: {}", isin, e.getMessage());
+            log.error("Error calculating bond {}: {}", isin, e.getMessage());
         }
     }
 
@@ -146,7 +145,7 @@ public class CalculationService {
         // 9. Расчёт по дате оферты (если присутствует)
         calculateOfferMetrics(bond, mathContext, now, costs, couponDaily, nkd, taxRate);
 
-        logger.debug("Bond {} calculated: yield={}%, profit={}, costs={}", 
+        log.debug("Bond {} calculated: yield={}%, profit={}, costs={}", 
                 bond.getIsin(), annualYield, profitNet, costs);
     }
 
@@ -265,7 +264,7 @@ public class CalculationService {
             bond.setAnnualYieldOffer(annualYieldOffer);
 
         } catch (Exception e) {
-            logger.debug("Error calculating offer metrics with custom fee for bond {}: {}", bond.getIsin(), e.getMessage());
+            log.debug("Error calculating offer metrics with custom fee for bond {}: {}", bond.getIsin(), e.getMessage());
             // При ошибке сбрасываем значения
             bond.setCouponOffer(null);
             bond.setProfitOffer(null);
@@ -337,11 +336,11 @@ public class CalculationService {
             
             bond.setAnnualYieldOffer(annualYieldOffer);
 
-            logger.debug("Bond {} offer metrics calculated: offer_yield={}%, offer_profit={}, days_to_offer={}", 
+            log.debug("Bond {} offer metrics calculated: offer_yield={}%, offer_profit={}, days_to_offer={}", 
                     bond.getIsin(), annualYieldOffer, profitNetOffer, daysToOffer);
 
         } catch (Exception e) {
-            logger.debug("Error calculating offer metrics for bond {}: {}", bond.getIsin(), e.getMessage());
+            log.debug("Error calculating offer metrics for bond {}: {}", bond.getIsin(), e.getMessage());
             // При ошибке сбрасываем значения
             bond.setCouponOffer(null);
             bond.setProfitOffer(null);
