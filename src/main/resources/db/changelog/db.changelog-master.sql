@@ -236,3 +236,15 @@ CREATE TABLE raexpert_ratings (
 
 CREATE INDEX idx_raexpert_ratings_isin ON raexpert_ratings(isin);
 CREATE INDEX idx_raexpert_ratings_date ON raexpert_ratings(rating_date DESC);
+
+--changeset bonds:19
+CREATE TABLE dohod_ratings (
+    id SERIAL PRIMARY KEY,
+    isin VARCHAR(12) NOT NULL UNIQUE,
+    rating_value VARCHAR(10) NOT NULL,
+    rating_code INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_dohod_ratings_isin ON dohod_ratings(isin);

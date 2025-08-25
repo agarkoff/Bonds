@@ -11,12 +11,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.misterparser.bonds.config.DohodConfig;
-import ru.misterparser.bonds.model.Rating;
-import ru.misterparser.bonds.repository.BondRepository;
-import ru.misterparser.bonds.repository.RatingRepository;
+import ru.misterparser.bonds.model.DohodRating;
+import ru.misterparser.bonds.repository.TBankBondRepository;
+import ru.misterparser.bonds.repository.DohodRatingRepository;
 import ru.misterparser.bonds.util.RatingUtils;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -30,10 +29,10 @@ public class DohodService {
     private DohodConfig dohodConfig;
 
     @Autowired
-    private RatingRepository ratingRepository;
+    private DohodRatingRepository dohodRatingRepository;
 
     @Autowired
-    private BondRepository bondRepository;
+    private TBankBondRepository tBankBondRepository;
 
     @Transactional
     public void updateRatings() {
@@ -82,18 +81,21 @@ public class DohodService {
                         String ratingValue = extractRating(row);
 
                         if (isin != null && ratingValue != null && RatingUtils.isValidRating(ratingValue)) {
-                            Rating rating = new Rating(isin, ratingValue, LocalDate.now());
-                            rating.setRatingCode(RatingUtils.getRatingCode(ratingValue));
+                            // Проверяем есть ли облигация в tbank_bonds по ISIN
+                            boolean bondExists = tBankBondRepository.findAll().stream()
+                                .anyMatch(bond -> isin.equals(bond.getTicker()));
+                            
+                            if (bondExists) {
+                                DohodRating rating = new DohodRating(
+                                    isin, ratingValue, RatingUtils.getRatingCode(ratingValue)
+                                );
 
-                            ratingRepository.save(rating);
-
-                            // Обновляем рейтинг в таблице bonds
-                            if (bondRepository.findByIsin(isin).isPresent()) {
-                                bondRepository.updateRating(isin, ratingValue, rating.getRatingCode());
+                                dohodRatingRepository.saveOrUpdate(rating);
+                                successful++;
+                                logger.debug("Successfully processed rating for ISIN: {}, Rating: {}", isin, ratingValue);
+                            } else {
+                                logger.debug("Skipping rating for ISIN {}: not found in tbank_bonds", isin);
                             }
-
-                            successful++;
-                            logger.debug("Successfully processed rating for ISIN: {}, Rating: {}", isin, ratingValue);
                         }
 
                     } catch (Exception e) {
