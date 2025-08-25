@@ -15,9 +15,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.misterparser.bonds.config.RaExpertConfig;
-import ru.misterparser.bonds.model.Rating;
-import ru.misterparser.bonds.repository.BondRepository;
-import ru.misterparser.bonds.repository.RatingRepository;
+import ru.misterparser.bonds.model.RaExpertRating;
+import ru.misterparser.bonds.repository.TBankBondRepository;
+import ru.misterparser.bonds.repository.RaExpertRatingRepository;
 import ru.misterparser.bonds.util.RatingUtils;
 
 import java.io.File;
@@ -46,10 +46,10 @@ public class RaExpertService {
     private RaExpertConfig raExpertConfig;
 
     @Autowired
-    private RatingRepository ratingRepository;
+    private RaExpertRatingRepository raExpertRatingRepository;
 
     @Autowired
-    private BondRepository bondRepository;
+    private TBankBondRepository tBankBondRepository;
 
     @Transactional
     public void updateRatings() {
@@ -76,17 +76,20 @@ public class RaExpertService {
             for (String bondUrl : bondUrls) {
                 processed++;
                 try {
-                    List<Rating> ratings = parseBondPage(driver, bondUrl);
-                    for (Rating rating : ratings) {
+                    List<RaExpertRating> ratings = parseBondPage(driver, bondUrl);
+                    for (RaExpertRating rating : ratings) {
                         if (rating.getIsin() != null) {
-                            ratingRepository.save(rating);
+                            // Проверяем есть ли облигация в tbank_bonds по ISIN
+                            boolean bondExists = tBankBondRepository.findAll().stream()
+                                .anyMatch(bond -> rating.getIsin().equals(bond.getTicker()));
                             
-                            // Обновляем рейтинг в таблице bonds
-                            if (bondRepository.findByIsin(rating.getIsin()).isPresent()) {
-                                bondRepository.updateRating(rating.getIsin(), rating.getRatingValue(), rating.getRatingCode());
+                            if (bondExists) {
+                                raExpertRatingRepository.saveOrUpdate(rating);
+                                successful++;
+                                logger.debug("Saved rating {} for ISIN {}", rating.getRatingValue(), rating.getIsin());
+                            } else {
+                                logger.debug("Skipping rating for ISIN {}: not found in tbank_bonds", rating.getIsin());
                             }
-                            
-                            successful++;
                         }
                     }
 
@@ -174,8 +177,8 @@ public class RaExpertService {
         return bondUrls;
     }
 
-    private List<Rating> parseBondPage(WebDriver driver, String bondUrl) {
-        List<Rating> ratings = new ArrayList<>();
+    private List<RaExpertRating> parseBondPage(WebDriver driver, String bondUrl) {
+        List<RaExpertRating> ratings = new ArrayList<>();
         
         try {
             String pageContent = loadPageContent(driver, bondUrl);
@@ -184,7 +187,7 @@ public class RaExpertService {
             String companyName = extractCompanyName(pageContent);
             
             if (isin != null) {
-                List<Rating> bondRatings = extractRatings(pageContent, isin, companyName);
+                List<RaExpertRating> bondRatings = extractRatings(pageContent, isin, companyName);
                 ratings.addAll(bondRatings);
             }
             
@@ -272,8 +275,8 @@ public class RaExpertService {
         return null;
     }
 
-    private List<Rating> extractRatings(String pageContent, String isin, String companyName) {
-        List<Rating> ratings = new ArrayList<>();
+    private List<RaExpertRating> extractRatings(String pageContent, String isin, String companyName) {
+        List<RaExpertRating> ratings = new ArrayList<>();
 
         try {
             Document doc = Jsoup.parse(pageContent);
@@ -307,9 +310,10 @@ public class RaExpertService {
                                 try {
                                     LocalDate ratingDate = LocalDate.parse(dateStr, DATE_FORMAT);
 
-                                    Rating rating = new Rating(isin, ratingValue, ratingDate);
-                                    rating.setCompanyName(companyName);
-                                    rating.setRatingCode(RatingUtils.getRatingCode(ratingValue));
+                                    RaExpertRating rating = new RaExpertRating(
+                                        isin, companyName, ratingValue, 
+                                        RatingUtils.getRatingCode(ratingValue), ratingDate
+                                    );
 
                                     ratings.add(rating);
                                 } catch (Exception e) {

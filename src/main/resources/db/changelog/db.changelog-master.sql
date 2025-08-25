@@ -219,3 +219,20 @@ CREATE TABLE tbank_prices (
 );
 
 CREATE INDEX idx_tbank_prices_figi ON tbank_prices(figi);
+
+--changeset bonds:18
+CREATE TABLE raexpert_ratings (
+    id SERIAL PRIMARY KEY,
+    isin VARCHAR(12) NOT NULL,
+    company_name VARCHAR(255),
+    rating_value VARCHAR(10) NOT NULL,
+    rating_code INTEGER,
+    rating_date DATE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT unique_raexpert_rating UNIQUE(isin, rating_date)
+);
+
+CREATE INDEX idx_raexpert_ratings_isin ON raexpert_ratings(isin);
+CREATE INDEX idx_raexpert_ratings_date ON raexpert_ratings(rating_date DESC);
