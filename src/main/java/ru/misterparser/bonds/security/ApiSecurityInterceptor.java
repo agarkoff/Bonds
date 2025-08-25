@@ -3,6 +3,7 @@ package ru.misterparser.bonds.security;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -12,6 +13,7 @@ import ru.misterparser.bonds.service.TelegramAuthService;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Arrays;
 
 @Component
 public class ApiSecurityInterceptor implements HandlerInterceptor {
@@ -22,12 +24,21 @@ public class ApiSecurityInterceptor implements HandlerInterceptor {
     @Autowired
     private TelegramAuthService telegramAuthService;
 
+    @Autowired
+    private Environment environment;
+
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         String requestURI = request.getRequestURI();
         
         // Проверяем только endpoints начинающиеся с /api
         if (!requestURI.startsWith("/api")) {
+            return true;
+        }
+
+        // Отключаем авторизацию для профиля 'test'
+        if (Arrays.asList(environment.getActiveProfiles()).contains("test")) {
+            logger.debug("API security disabled for test profile: {}", requestURI);
             return true;
         }
 
