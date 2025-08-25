@@ -1,5 +1,6 @@
 package ru.misterparser.bonds.service;
 
+import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -11,7 +12,6 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.misterparser.bonds.config.RaExpertConfig;
@@ -31,10 +31,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Service
+@RequiredArgsConstructor
 public class RaExpertService {
 
     private static final Logger logger = LoggerFactory.getLogger(RaExpertService.class);
@@ -42,14 +42,9 @@ public class RaExpertService {
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private static final Pattern ISIN_PATTERN = Pattern.compile("([A-Z]{2}[A-Z0-9]{10})");
 
-    @Autowired
-    private RaExpertConfig raExpertConfig;
-
-    @Autowired
-    private RaExpertRatingRepository raExpertRatingRepository;
-
-    @Autowired
-    private TBankBondRepository tBankBondRepository;
+    private final RaExpertConfig raExpertConfig;
+    private final RaExpertRatingRepository raExpertRatingRepository;
+    private final TBankBondRepository tBankBondRepository;
 
     @Transactional
     public void updateRatings() {

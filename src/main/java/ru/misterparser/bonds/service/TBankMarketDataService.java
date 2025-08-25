@@ -2,9 +2,9 @@ package ru.misterparser.bonds.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Random;
 
 @Service
+@RequiredArgsConstructor
 public class TBankMarketDataService {
 
     private static final Logger logger = LoggerFactory.getLogger(TBankMarketDataService.class);
@@ -32,17 +33,10 @@ public class TBankMarketDataService {
     private final RestTemplate restTemplate = new RestTemplate();
     private final RateLimitService rateLimitService = new RateLimitService();
 
-    @Autowired
-    private TBankConfig tBankConfig;
-
-    @Autowired
-    private TBankBondRepository tBankBondRepository;
-    
-    @Autowired
-    private TBankPriceRepository tBankPriceRepository;
-    
-    @Autowired
-    private Environment environment;
+    private final TBankConfig tBankConfig;
+    private final TBankBondRepository tBankBondRepository;
+    private final TBankPriceRepository tBankPriceRepository;
+    private final Environment environment;
     
     private final Random random = new Random();
 

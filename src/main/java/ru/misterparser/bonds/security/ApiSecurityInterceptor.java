@@ -1,8 +1,8 @@
 package ru.misterparser.bonds.security;
 
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -16,16 +16,14 @@ import java.io.IOException;
 import java.util.Arrays;
 
 @Component
+@RequiredArgsConstructor
 public class ApiSecurityInterceptor implements HandlerInterceptor {
 
     private static final Logger logger = LoggerFactory.getLogger(ApiSecurityInterceptor.class);
     private static final Long AUTHORIZED_USER_ID = 1L;
-
-    @Autowired
-    private TelegramAuthService telegramAuthService;
-
-    @Autowired
-    private Environment environment;
+    
+    private final TelegramAuthService telegramAuthService;
+    private final Environment environment;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {

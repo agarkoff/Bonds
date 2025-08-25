@@ -1,8 +1,8 @@
 package ru.misterparser.bonds.service;
 
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,19 +18,15 @@ import java.util.Map;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class OfferNotificationScheduler {
 
     private static final Logger logger = LoggerFactory.getLogger(OfferNotificationScheduler.class);
     private static final int NOTIFICATION_DAYS = 14; // 2 недели
 
-    @Autowired
-    private OfferSubscriptionRepository subscriptionRepository;
-
-    @Autowired
-    private BondRepository bondRepository;
-
-    @Autowired
-    private TelegramBotService telegramBotService;
+    private final OfferSubscriptionRepository subscriptionRepository;
+    private final BondRepository bondRepository;
+    private final TelegramBotService telegramBotService;
 
     /**
      * Отправляет ежедневные уведомления в 9:00 МСК

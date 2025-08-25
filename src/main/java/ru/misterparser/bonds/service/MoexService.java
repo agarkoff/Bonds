@@ -5,9 +5,9 @@ import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import com.opencsv.exceptions.CsvException;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.misterparser.bonds.config.MoexConfig;
@@ -25,6 +25,7 @@ import java.time.format.DateTimeParseException;
 import java.util.*;
 
 @Service
+@RequiredArgsConstructor
 public class MoexService {
 
     private static final Logger logger = LoggerFactory.getLogger(MoexService.class);
@@ -32,11 +33,8 @@ public class MoexService {
     private static final DateTimeFormatter DATE_FORMAT_1 = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private static final DateTimeFormatter DATE_FORMAT_2 = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    @Autowired
-    private MoexConfig moexConfig;
-
-    @Autowired
-    private MoexBondRepository moexBondRepository;
+    private final MoexConfig moexConfig;
+    private final MoexBondRepository moexBondRepository;
 
     @Transactional
     public void parseBonds() {

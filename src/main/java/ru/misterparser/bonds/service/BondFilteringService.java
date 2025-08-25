@@ -1,6 +1,6 @@
 package ru.misterparser.bonds.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.misterparser.bonds.model.Bond;
 import ru.misterparser.bonds.repository.BondRepository;
@@ -11,13 +11,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class BondFilteringService {
 
-    @Autowired
-    private BondRepository bondRepository;
-
-    @Autowired
-    private CalculationService calculationService;
+    private final BondRepository bondRepository;
+    private final CalculationService calculationService;
 
     /**
      * Параметры для фильтрации и сортировки облигаций

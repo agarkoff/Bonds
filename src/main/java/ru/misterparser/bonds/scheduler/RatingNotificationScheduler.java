@@ -1,19 +1,19 @@
 package ru.misterparser.bonds.scheduler;
 
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import ru.misterparser.bonds.service.RatingNotificationService;
 
 @Component
+@RequiredArgsConstructor
 public class RatingNotificationScheduler {
 
     private static final Logger logger = LoggerFactory.getLogger(RatingNotificationScheduler.class);
 
-    @Autowired
-    private RatingNotificationService ratingNotificationService;
+    private final RatingNotificationService ratingNotificationService;
 
     /**
      * Запускается каждый час для проверки подписок на рейтинг

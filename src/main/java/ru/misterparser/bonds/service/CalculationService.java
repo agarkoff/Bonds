@@ -1,8 +1,8 @@
 package ru.misterparser.bonds.service;
 
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.misterparser.bonds.config.CalcConfig;
@@ -18,17 +18,15 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class CalculationService {
 
     private static final Logger logger = LoggerFactory.getLogger(CalculationService.class);
     private static final BigDecimal HUNDRED = new BigDecimal("100");
     private static final BigDecimal DAYS_IN_YEAR = new BigDecimal("365");
 
-    @Autowired
-    private CalcConfig calcConfig;
-
-    @Autowired
-    private BondRepository bondRepository;
+    private final CalcConfig calcConfig;
+    private final BondRepository bondRepository;
 
     @Transactional
     public void calculateAllBonds() {

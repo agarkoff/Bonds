@@ -1,8 +1,8 @@
 package ru.misterparser.bonds.controller;
 
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -21,18 +21,14 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/subscriptions")
+@RequiredArgsConstructor
 public class SubscriptionController {
 
     private static final Logger logger = LoggerFactory.getLogger(SubscriptionController.class);
 
-    @Autowired
-    private RatingSubscriptionRepository subscriptionRepository;
-
-    @Autowired
-    private TelegramAuthService telegramAuthService;
-
-    @Autowired
-    private RatingNotificationService ratingNotificationService;
+    private final RatingSubscriptionRepository subscriptionRepository;
+    private final TelegramAuthService telegramAuthService;
+    private final RatingNotificationService ratingNotificationService;
 
     /**
      * Создает новую подписку на рейтинг

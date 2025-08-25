@@ -1,5 +1,6 @@
 package ru.misterparser.bonds.config;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -19,16 +20,12 @@ import java.util.Arrays;
 @Configuration
 @EnableWebSecurity
 @Slf4j
+@RequiredArgsConstructor
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
     
-    @Autowired
-    private DataSource dataSource;
-    
-    @Autowired
-    private TelegramUserDetailsService telegramUserDetailsService;
-    
-    @Autowired
-    private Environment environment;
+    private final DataSource dataSource;
+    private final TelegramUserDetailsService telegramUserDetailsService;
+    private final Environment environment;
     
     @Bean
     public PersistentTokenRepository persistentTokenRepository() {

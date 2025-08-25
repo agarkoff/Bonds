@@ -1,8 +1,8 @@
 package ru.misterparser.bonds.controller;
 
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -18,15 +18,13 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/offer-subscriptions")
+@RequiredArgsConstructor
 public class OfferSubscriptionController {
 
     private static final Logger logger = LoggerFactory.getLogger(OfferSubscriptionController.class);
 
-    @Autowired
-    private OfferSubscriptionRepository offerSubscriptionRepository;
-
-    @Autowired
-    private TelegramAuthService telegramAuthService;
+    private final OfferSubscriptionRepository offerSubscriptionRepository;
+    private final TelegramAuthService telegramAuthService;
 
     /**
      * Получает все подписки на оферты текущего пользователя

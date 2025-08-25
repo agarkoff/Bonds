@@ -1,8 +1,8 @@
 package ru.misterparser.bonds.service;
 
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.misterparser.bonds.model.Bond;
@@ -20,28 +20,18 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class RatingNotificationService {
 
     private static final Logger logger = LoggerFactory.getLogger(RatingNotificationService.class);
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
-    @Autowired
-    private RatingSubscriptionRepository subscriptionRepository;
-
-    @Autowired
-    private BondRepository bondRepository;
-
-    @Autowired
-    private TelegramUserRepository telegramUserRepository;
-
-    @Autowired
-    private TelegramBotService telegramBotService;
-
-    @Autowired
-    private BondFilteringService bondFilteringService;
-
-    @Autowired
-    private RatingColorService ratingColorService;
+    private final RatingSubscriptionRepository subscriptionRepository;
+    private final BondRepository bondRepository;
+    private final TelegramUserRepository telegramUserRepository;
+    private final TelegramBotService telegramBotService;
+    private final BondFilteringService bondFilteringService;
+    private final RatingColorService ratingColorService;
 
     /**
      * Обрабатывает все подписки на рейтинг и отправляет уведомления

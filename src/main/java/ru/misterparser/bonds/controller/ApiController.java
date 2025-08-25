@@ -1,8 +1,8 @@
 package ru.misterparser.bonds.controller;
 
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.misterparser.bonds.model.Bond;
@@ -13,30 +13,18 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api")
+@RequiredArgsConstructor
 public class ApiController {
 
     private static final Logger logger = LoggerFactory.getLogger(ApiController.class);
 
-    @Autowired
-    private MoexService moexService;
-
-    @Autowired
-    private TBankInstrumentsService tBankInstrumentsService;
-
-    @Autowired
-    private TBankMarketDataService tBankMarketDataService;
-
-    @Autowired
-    private RaExpertService raExpertService;
-
-    @Autowired
-    private DohodService dohodService;
-
-    @Autowired
-    private CalculationService calculationService;
-
-    @Autowired
-    private BondRepository bondRepository;
+    private final MoexService moexService;
+    private final TBankInstrumentsService tBankInstrumentsService;
+    private final TBankMarketDataService tBankMarketDataService;
+    private final RaExpertService raExpertService;
+    private final DohodService dohodService;
+    private final CalculationService calculationService;
+    private final BondRepository bondRepository;
 
     @PostMapping("/moex/bonds/parse")  
     public ResponseEntity<String> parseMoex() {

@@ -1,8 +1,8 @@
 package ru.misterparser.bonds.scheduler;
 
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import ru.misterparser.bonds.config.CalcConfig;
@@ -13,42 +13,22 @@ import ru.misterparser.bonds.config.TBankConfig;
 import ru.misterparser.bonds.service.*;
 
 @Component
+@RequiredArgsConstructor
 public class DataUpdateScheduler {
 
     private static final Logger logger = LoggerFactory.getLogger(DataUpdateScheduler.class);
 
-    @Autowired
-    private MoexService moexService;
-
-    @Autowired
-    private TBankInstrumentsService tBankInstrumentsService;
-
-    @Autowired
-    private TBankMarketDataService tBankMarketDataService;
-
-    @Autowired
-    private RaExpertService raExpertService;
-
-    @Autowired
-    private DohodService dohodService;
-
-    @Autowired
-    private CalculationService calculationService;
-
-    @Autowired
-    private MoexConfig moexConfig;
-
-    @Autowired
-    private TBankConfig tBankConfig;
-
-    @Autowired
-    private RaExpertConfig raExpertConfig;
-
-    @Autowired
-    private DohodConfig dohodConfig;
-
-    @Autowired
-    private CalcConfig calcConfig;
+    private final MoexService moexService;
+    private final TBankInstrumentsService tBankInstrumentsService;
+    private final TBankMarketDataService tBankMarketDataService;
+    private final RaExpertService raExpertService;
+    private final DohodService dohodService;
+    private final CalculationService calculationService;
+    private final MoexConfig moexConfig;
+    private final TBankConfig tBankConfig;
+    private final RaExpertConfig raExpertConfig;
+    private final DohodConfig dohodConfig;
+    private final CalcConfig calcConfig;
 
     @Scheduled(cron = "#{@moexConfig.cron}")
     public void updateMoexData() {

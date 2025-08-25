@@ -1,8 +1,8 @@
 package ru.misterparser.bonds.service;
 
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class TelegramBotService extends TelegramLongPollingBot {
 
     private static final Logger logger = LoggerFactory.getLogger(TelegramBotService.class);
@@ -37,14 +38,9 @@ public class TelegramBotService extends TelegramLongPollingBot {
     @Value("${telegram.bot.username:BondsOfferBot}")
     private String botUsername;
 
-    @Autowired
-    private OfferSubscriptionRepository subscriptionRepository;
-
-    @Autowired
-    private BondRepository bondRepository;
-
-    @Autowired
-    private TelegramUserRepository telegramUserRepository;
+    private final OfferSubscriptionRepository subscriptionRepository;
+    private final BondRepository bondRepository;
+    private final TelegramUserRepository telegramUserRepository;
 
     @PostConstruct
     public void init() {

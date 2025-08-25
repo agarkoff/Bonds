@@ -2,9 +2,9 @@ package ru.misterparser.bonds.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class TBankInstrumentsService {
 
     private static final Logger logger = LoggerFactory.getLogger(TBankInstrumentsService.class);
@@ -25,11 +26,8 @@ public class TBankInstrumentsService {
     private final RestTemplate restTemplate = new RestTemplate();
     private final RateLimitService rateLimitService = new RateLimitService();
 
-    @Autowired
-    private TBankConfig tBankConfig;
-
-    @Autowired
-    private TBankBondRepository tBankBondRepository;
+    private final TBankConfig tBankConfig;
+    private final TBankBondRepository tBankBondRepository;
 
     @Transactional
     public void updateBondsData() {
