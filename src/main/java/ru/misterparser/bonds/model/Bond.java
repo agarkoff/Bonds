@@ -51,8 +51,12 @@ public class Bond {
     private BigDecimal profitNetOffer;
     private BigDecimal annualYieldOffer;
     
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    // Отдельные даты обновления исходных сущностей
+    private LocalDateTime moexUpdatedAt;
+    private LocalDateTime tbankBondsUpdatedAt;
+    private LocalDateTime tbankPricesUpdatedAt;
+    private LocalDateTime dohodRatingsUpdatedAt;
+    private LocalDateTime bondsCalcUpdatedAt;
 
     public Bond(String isin) {
         this.isin = isin;

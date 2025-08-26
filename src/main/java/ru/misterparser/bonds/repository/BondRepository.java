@@ -1,6 +1,6 @@
 package ru.misterparser.bonds.repository;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
@@ -12,10 +12,10 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
+@RequiredArgsConstructor
 public class BondRepository {
 
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
+    private final JdbcTemplate jdbcTemplate;
 
     private final RowMapper<Bond> bondRowMapper = new RowMapper<Bond>() {
         @Override
@@ -51,8 +51,13 @@ public class BondRepository {
             bond.setProfitOffer(rs.getBigDecimal("profit_offer"));
             bond.setProfitNetOffer(rs.getBigDecimal("profit_net_offer"));
             bond.setAnnualYieldOffer(rs.getBigDecimal("annual_yield_offer"));
-            bond.setCreatedAt(rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toLocalDateTime() : null);
-            bond.setUpdatedAt(rs.getTimestamp("updated_at") != null ? rs.getTimestamp("updated_at").toLocalDateTime() : null);
+            // Отдельные даты обновления исходных сущностей
+            bond.setMoexUpdatedAt(rs.getTimestamp("moex_updated_at") != null ? rs.getTimestamp("moex_updated_at").toLocalDateTime() : null);
+            bond.setTbankBondsUpdatedAt(rs.getTimestamp("tbank_bonds_updated_at") != null ? rs.getTimestamp("tbank_bonds_updated_at").toLocalDateTime() : null);
+            bond.setTbankPricesUpdatedAt(rs.getTimestamp("tbank_prices_updated_at") != null ? rs.getTimestamp("tbank_prices_updated_at").toLocalDateTime() : null);
+            bond.setDohodRatingsUpdatedAt(rs.getTimestamp("dohod_ratings_updated_at") != null ? rs.getTimestamp("dohod_ratings_updated_at").toLocalDateTime() : null);
+            bond.setBondsCalcUpdatedAt(rs.getTimestamp("bonds_calc_updated_at") != null ? rs.getTimestamp("bonds_calc_updated_at").toLocalDateTime() : null);
+            
             return bond;
         }
     };
@@ -122,183 +127,13 @@ public class BondRepository {
         return jdbcTemplate.query("SELECT * FROM bonds WHERE figi IS NOT NULL", bondRowMapper);
     }
 
-    public void save(Bond bond) {
-        if (bond.getId() == null) {
-            String sql = "INSERT INTO bonds (isin, ticker, short_name, coupon_value, maturity_date, face_value, " +
-                    "coupon_frequency, coupon_length, coupon_days_passed, offer_date, figi, instrument_uid, asset_uid, brand_name, " +
-                    "price, rating_value, rating_code, coupon_daily, nkd, costs, coupon_redemption, " +
-                    "profit, profit_net, annual_yield, coupon_offer, profit_offer, profit_net_offer, annual_yield_offer) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            
-            jdbcTemplate.update(sql,
-                    bond.getIsin(),
-                    bond.getTicker(),
-                    bond.getShortName(),
-                    bond.getCouponValue(),
-                    bond.getMaturityDate(),
-                    bond.getFaceValue(),
-                    bond.getCouponFrequency(),
-                    bond.getCouponLength(),
-                    bond.getCouponDaysPassed(),
-                    bond.getOfferDate(),
-                    bond.getFigi(),
-                    bond.getInstrumentUid(),
-                    bond.getAssetUid(),
-                    bond.getBrandName(),
-                    bond.getPrice(),
-                    bond.getRatingValue(),
-                    bond.getRatingCode(),
-                    bond.getCouponDaily(),
-                    bond.getNkd(),
-                    bond.getCosts(),
-                    bond.getCouponRedemption(),
-                    bond.getProfit(),
-                    bond.getProfitNet(),
-                    bond.getAnnualYield(),
-                    bond.getCouponOffer(),
-                    bond.getProfitOffer(),
-                    bond.getProfitNetOffer(),
-                    bond.getAnnualYieldOffer()
-            );
-        } else {
-            String sql = "UPDATE bonds SET ticker = ?, short_name = ?, coupon_value = ?, maturity_date = ?, face_value = ?, " +
-                    "coupon_frequency = ?, coupon_length = ?, coupon_days_passed = ?, offer_date = ?, figi = ?, instrument_uid = ?, " +
-                    "asset_uid = ?, brand_name = ?, price = ?, rating_value = ?, rating_code = ?, coupon_daily = ?, " +
-                    "nkd = ?, costs = ?, coupon_redemption = ?, profit = ?, profit_net = ?, " +
-                    "annual_yield = ?, coupon_offer = ?, profit_offer = ?, profit_net_offer = ?, annual_yield_offer = ?, " +
-                    "updated_at = CURRENT_TIMESTAMP WHERE id = ?";
-            
-            jdbcTemplate.update(sql,
-                    bond.getTicker(),
-                    bond.getShortName(),
-                    bond.getCouponValue(),
-                    bond.getMaturityDate(),
-                    bond.getFaceValue(),
-                    bond.getCouponFrequency(),
-                    bond.getCouponLength(),
-                    bond.getCouponDaysPassed(),
-                    bond.getOfferDate(),
-                    bond.getFigi(),
-                    bond.getInstrumentUid(),
-                    bond.getAssetUid(),
-                    bond.getBrandName(),
-                    bond.getPrice(),
-                    bond.getRatingValue(),
-                    bond.getRatingCode(),
-                    bond.getCouponDaily(),
-                    bond.getNkd(),
-                    bond.getCosts(),
-                    bond.getCouponRedemption(),
-                    bond.getProfit(),
-                    bond.getProfitNet(),
-                    bond.getAnnualYield(),
-                    bond.getCouponOffer(),
-                    bond.getProfitOffer(),
-                    bond.getProfitNetOffer(),
-                    bond.getAnnualYieldOffer(),
-                    bond.getId()
-            );
-        }
-    }
-
-    public void saveOrUpdate(Bond bond) {
-        Optional<Bond> existing = findByIsin(bond.getIsin());
-        if (existing.isPresent()) {
-            bond.setId(existing.get().getId());
-        }
-        save(bond);
-    }
-
-    public void saveOrUpdateMoexData(Bond bond) {
-        Optional<Bond> existing = findByIsin(bond.getIsin());
-        if (existing.isPresent()) {
-            updateMoexFields(bond);
-        } else {
-            save(bond);
-        }
-    }
-
-    private void updateMoexFields(Bond bond) {
-        String sql = "UPDATE bonds SET ticker = ?, short_name = ?, coupon_value = ?, maturity_date = ?, " +
-                "face_value = ?, coupon_frequency = ?, coupon_length = ?, coupon_days_passed = ?, offer_date = ?, " +
-                "updated_at = CURRENT_TIMESTAMP WHERE isin = ?";
-        
-        jdbcTemplate.update(sql,
-                bond.getTicker(),
-                bond.getShortName(),
-                bond.getCouponValue(),
-                bond.getMaturityDate(),
-                bond.getFaceValue(),
-                bond.getCouponFrequency(),
-                bond.getCouponLength(),
-                bond.getCouponDaysPassed(),
-                bond.getOfferDate(),
-                bond.getIsin()
-        );
-    }
-
-    public void saveOrUpdateTBankData(Bond bond) {
-        Optional<Bond> existing = findByIsin(bond.getIsin());
-        if (existing.isPresent()) {
-            updateTBankFields(bond);
-        } else {
-            save(bond);
-        }
-    }
-
-    private void updateTBankFields(Bond bond) {
-        String sql = "UPDATE bonds SET figi = ?, instrument_uid = ?, asset_uid = ?, brand_name = ?, " +
-                "updated_at = CURRENT_TIMESTAMP WHERE isin = ?";
-        
-        jdbcTemplate.update(sql,
-                bond.getFigi(),
-                bond.getInstrumentUid(),
-                bond.getAssetUid(),
-                bond.getBrandName(),
-                bond.getIsin()
-        );
-    }
-
-    public void saveOrUpdateCalculationData(Bond bond) {
-        Optional<Bond> existing = findByIsin(bond.getIsin());
-        if (existing.isPresent()) {
-            updateCalculationFields(bond);
-        } else {
-            save(bond);
-        }
-    }
-
-    private void updateCalculationFields(Bond bond) {
-        String sql = "UPDATE bonds SET coupon_daily = ?, nkd = ?, costs = ?, " +
-                "coupon_redemption = ?, profit = ?, profit_net = ?, annual_yield = ?, " +
-                "coupon_offer = ?, profit_offer = ?, profit_net_offer = ?, annual_yield_offer = ?, " +
-                "updated_at = CURRENT_TIMESTAMP WHERE isin = ?";
-        
-        jdbcTemplate.update(sql,
-                bond.getCouponDaily(),
-                bond.getNkd(),
-                bond.getCosts(),
-                bond.getCouponRedemption(),
-                bond.getProfit(),
-                bond.getProfitNet(),
-                bond.getAnnualYield(),
-                bond.getCouponOffer(),
-                bond.getProfitOffer(),
-                bond.getProfitNetOffer(),
-                bond.getAnnualYieldOffer(),
-                bond.getIsin()
-        );
-    }
-
-    public void updatePrice(String isin, java.math.BigDecimal price) {
-        jdbcTemplate.update("UPDATE bonds SET price = ?, updated_at = CURRENT_TIMESTAMP WHERE isin = ?", 
-                price, isin);
-    }
-
-    public void updateRating(String isin, String ratingValue, Integer ratingCode) {
-        jdbcTemplate.update("UPDATE bonds SET rating_value = ?, rating_code = ?, updated_at = CURRENT_TIMESTAMP WHERE isin = ?", 
-                ratingValue, ratingCode, isin);
-    }
+    // Методы записи удалены - используется представление только для чтения
+    // Для записи данных используются соответствующие репозитории:
+    // - MoexBondRepository для данных MOEX
+    // - TBankBondRepository для данных T-Bank
+    // - TBankPriceRepository для цен
+    // - DohodRatingRepository для рейтингов
+    // - BondCalculationRepository для расчетных данных (таблица bonds_calc)
 
     public long count() {
         return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM bonds", Long.class);

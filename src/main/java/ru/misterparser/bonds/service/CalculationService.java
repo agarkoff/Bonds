@@ -6,12 +6,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.misterparser.bonds.config.CalcConfig;
 import ru.misterparser.bonds.model.Bond;
-import ru.misterparser.bonds.repository.BondRepository;
+import ru.misterparser.bonds.repository.BondCalculationDataRepository;
 import ru.misterparser.bonds.repository.BondCalculationRepository;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
+import java.lang.reflect.Field;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -26,7 +27,7 @@ public class CalculationService {
     private static final BigDecimal DAYS_IN_YEAR = new BigDecimal("365");
 
     private final CalcConfig calcConfig;
-    private final BondRepository bondRepository;
+    private final BondCalculationDataRepository bondCalculationDataRepository;
     private final BondCalculationRepository bondCalculationRepository;
 
     @Transactional
@@ -34,8 +35,8 @@ public class CalculationService {
         log.info("Starting calculation for all bonds");
 
         try {
-            List<Bond> bonds = bondRepository.findAll();
-            log.info("Found {} bonds to calculate", bonds.size());
+            List<Bond> bonds = bondCalculationDataRepository.findAllForCalculation();
+            log.info("Found {} bonds from source tables for calculation", bonds.size());
 
             int processed = 0;
             int calculated = 0;
@@ -72,7 +73,7 @@ public class CalculationService {
         log.info("Starting calculation for bond: {}", isin);
 
         try {
-            Optional<Bond> optionalBond = bondRepository.findByIsin(isin);
+            Optional<Bond> optionalBond = bondCalculationDataRepository.findByIsinForCalculation(isin);
             if (optionalBond.isPresent()) {
                 Bond bond = optionalBond.get();
                 if (canCalculate(bond)) {
@@ -276,28 +277,44 @@ public class CalculationService {
     }
 
     private Bond createBondCopy(Bond original) {
-        Bond copy = new Bond();
-        copy.setId(original.getId());
-        copy.setIsin(original.getIsin());
-        copy.setTicker(original.getTicker());
-        copy.setShortName(original.getShortName());
-        copy.setCouponValue(original.getCouponValue());
-        copy.setMaturityDate(original.getMaturityDate());
-        copy.setFaceValue(original.getFaceValue());
-        copy.setCouponFrequency(original.getCouponFrequency());
-        copy.setCouponLength(original.getCouponLength());
-        copy.setCouponDaysPassed(original.getCouponDaysPassed());
-        copy.setOfferDate(original.getOfferDate());
-        copy.setFigi(original.getFigi());
-        copy.setInstrumentUid(original.getInstrumentUid());
-        copy.setAssetUid(original.getAssetUid());
-        copy.setBrandName(original.getBrandName());
-        copy.setPrice(original.getPrice());
-        copy.setRatingValue(original.getRatingValue());
-        copy.setRatingCode(original.getRatingCode());
-        copy.setCreatedAt(original.getCreatedAt());
-        copy.setUpdatedAt(original.getUpdatedAt());
-        return copy;
+        try {
+            Bond copy = new Bond();
+            
+            // Получаем все поля класса Bond включая унаследованные
+            Field[] fields = Bond.class.getDeclaredFields();
+            
+            for (Field field : fields) {
+                field.setAccessible(true);
+                Object value = field.get(original);
+                
+                // Пропускаем расчетные поля - они будут заполнены заново
+                String fieldName = field.getName();
+                if (isCalculatedField(fieldName)) {
+                    continue;
+                }
+                
+                field.set(copy, value);
+            }
+            
+            return copy;
+        } catch (Exception e) {
+            log.error("Error creating bond copy for ISIN: {}", original.getIsin(), e);
+            throw new RuntimeException("Failed to create bond copy", e);
+        }
+    }
+    
+    private boolean isCalculatedField(String fieldName) {
+        return fieldName.equals("couponDaily") ||
+               fieldName.equals("nkd") ||
+               fieldName.equals("costs") ||
+               fieldName.equals("couponRedemption") ||
+               fieldName.equals("profit") ||
+               fieldName.equals("profitNet") ||
+               fieldName.equals("annualYield") ||
+               fieldName.equals("couponOffer") ||
+               fieldName.equals("profitOffer") ||
+               fieldName.equals("profitNetOffer") ||
+               fieldName.equals("annualYieldOffer");
     }
 
     private void calculateOfferMetrics(Bond bond, MathContext mathContext, LocalDate now, 

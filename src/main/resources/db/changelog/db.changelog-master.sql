@@ -271,3 +271,66 @@ CREATE TABLE bonds_calc (
 
 CREATE INDEX idx_bonds_calc_isin ON bonds_calc(isin);
 CREATE INDEX idx_bonds_calc_annual_yield ON bonds_calc(annual_yield DESC);
+
+--changeset bonds:21
+-- Удаление старой таблицы bonds после создания представления
+DROP TABLE IF EXISTS bonds CASCADE;
+
+--changeset bonds:22
+-- Создание представления bonds с расчетными данными
+
+CREATE VIEW bonds AS
+SELECT
+    -- Генерируем уникальный ID на основе ISIN
+    ('x' || substr(md5(mb.isin), 1, 8))::bit(32)::bigint as id,
+
+    -- Основные данные из moex_bonds
+    mb.isin,
+    COALESCE(tb.ticker, mb.isin) as ticker,
+    mb.short_name,
+    mb.coupon_value,
+    mb.maturity_date,
+    mb.face_value,
+    mb.coupon_frequency,
+    mb.coupon_length,
+    mb.coupon_days_passed,
+    mb.offer_date,
+
+    -- Данные из tbank_bonds
+    tb.figi,
+    tb.instrument_uid,
+    tb.asset_uid,
+    tb.brand_name,
+
+    -- Цена из tbank_prices
+    tp.price,
+
+    -- Рейтинг из dohod_ratings
+    dr.rating_value,
+    dr.rating_code,
+
+    -- Расчетные поля из bond_calculations
+    bc.coupon_daily,
+    bc.nkd,
+    bc.costs,
+    bc.coupon_redemption,
+    bc.profit,
+    bc.profit_net,
+    bc.annual_yield,
+    bc.coupon_offer,
+    bc.profit_offer,
+    bc.profit_net_offer,
+    bc.annual_yield_offer,
+
+    -- Отдельные даты обновления исходных сущностей
+    mb.updated_at as moex_updated_at,
+    tb.updated_at as tbank_bonds_updated_at,
+    tp.updated_at as tbank_prices_updated_at,
+    dr.updated_at as dohod_ratings_updated_at,
+    bc.updated_at as bonds_calc_updated_at
+
+FROM moex_bonds mb
+LEFT JOIN tbank_bonds tb ON tb.ticker = mb.isin OR tb.figi = mb.isin
+LEFT JOIN tbank_prices tp ON tp.figi = tb.figi
+LEFT JOIN dohod_ratings dr ON dr.isin = mb.isin
+INNER JOIN bonds_calc bc ON bc.isin = mb.isin;
