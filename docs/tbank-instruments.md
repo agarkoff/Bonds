@@ -50,7 +50,7 @@ T-Bank API → Assets → Brand Info → Instruments → tbank_bonds table
 tbank:
   api-url: "https://invest-public-api.tinkoff.ru/rest"
   token: "${TBANK_TOKEN}"        # токен из переменной окружения
-  rate-limit: 60                 # запросов в минуту
+  rate-limit: 300                # запросов в минуту
   instruments:
     cron: "0 0 12 * * MON-FRI"         # ежедневно в 12:00 по будням
 ```

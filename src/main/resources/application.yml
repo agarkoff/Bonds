@@ -36,7 +36,7 @@ sources:
       enabled: true
       api-url: "https://invest-public-api.tinkoff.ru/rest"
       token: "${TBANK_TOKEN:}"
-      rate-limit: 60
+      rate-limit: 300
       instruments:
         cron: "0 0 12 * * MON-FRI"
       marketdata:

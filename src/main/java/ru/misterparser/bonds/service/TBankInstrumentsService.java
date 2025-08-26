@@ -208,7 +208,7 @@ public class TBankInstrumentsService {
 
     private static class RateLimitService {
         private long lastRequestTime = 0;
-        private static final long REQUEST_INTERVAL = 60000 / 60; // 60 requests per minute
+        private static final long REQUEST_INTERVAL = 60000 / 300; // 60 requests per minute
         
         public synchronized void waitForRateLimit() {
             long currentTime = System.currentTimeMillis();
