@@ -248,3 +248,26 @@ CREATE TABLE dohod_ratings (
 );
 
 CREATE INDEX idx_dohod_ratings_isin ON dohod_ratings(isin);
+
+--changeset bonds:20
+-- Создание таблицы для расчетных данных облигаций
+CREATE TABLE bonds_calc (
+    id SERIAL PRIMARY KEY,
+    isin VARCHAR(12) NOT NULL UNIQUE,
+    coupon_daily DECIMAL(15,8),
+    nkd DECIMAL(15,8),
+    costs DECIMAL(15,8),
+    coupon_redemption DECIMAL(15,8),
+    profit DECIMAL(15,8),
+    profit_net DECIMAL(15,8),
+    annual_yield DECIMAL(15,8),
+    coupon_offer DECIMAL(15,8),
+    profit_offer DECIMAL(15,8),
+    profit_net_offer DECIMAL(15,8),
+    annual_yield_offer DECIMAL(15,8),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_bonds_calc_isin ON bonds_calc(isin);
+CREATE INDEX idx_bonds_calc_annual_yield ON bonds_calc(annual_yield DESC);

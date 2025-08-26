@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.misterparser.bonds.config.CalcConfig;
 import ru.misterparser.bonds.model.Bond;
 import ru.misterparser.bonds.repository.BondRepository;
+import ru.misterparser.bonds.repository.BondCalculationRepository;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
@@ -26,6 +27,7 @@ public class CalculationService {
 
     private final CalcConfig calcConfig;
     private final BondRepository bondRepository;
+    private final BondCalculationRepository bondCalculationRepository;
 
     @Transactional
     public void calculateAllBonds() {
@@ -44,7 +46,7 @@ public class CalculationService {
                 try {
                     if (canCalculate(bond)) {
                         calculateBond(bond);
-                        bondRepository.saveOrUpdateCalculationData(bond);
+                        bondCalculationRepository.saveOrUpdateCalculationData(bond);
                         calculated++;
                         log.debug("Calculated bond: {}", bond.getIsin());
                     } else {
@@ -75,7 +77,7 @@ public class CalculationService {
                 Bond bond = optionalBond.get();
                 if (canCalculate(bond)) {
                     calculateBond(bond);
-                    bondRepository.saveOrUpdateCalculationData(bond);
+                    bondCalculationRepository.saveOrUpdateCalculationData(bond);
                     log.info("Calculation completed for bond: {}", isin);
                 } else {
                     log.warn("Cannot calculate bond {} - missing required data", isin);
