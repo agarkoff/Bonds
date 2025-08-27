@@ -52,7 +52,7 @@ public class TBankMarketDataService {
         }
 
         // В режиме тестирования пропускаем проверку торговых часов
-        boolean isTestMode = isTestMode();
+        boolean isTestMode = isRandomPricesMode();
         if (!isTestMode && !isMarketHours()) {
             log.info("Outside market hours, skipping price update");
             return;
@@ -83,7 +83,7 @@ public class TBankMarketDataService {
                     }
                     
                     BigDecimal price;
-                    if (isTestMode()) {
+                    if (isRandomPricesMode()) {
                         price = generateRandomPrice(bond.getFaceValue());
                     } else {
                         price = getMarketPrice(bond);
@@ -131,10 +131,10 @@ public class TBankMarketDataService {
         return timeNow.isAfter(marketOpen) && timeNow.isBefore(marketClose);
     }
     
-    private boolean isTestMode() {
+    private boolean isRandomPricesMode() {
         String[] activeProfiles = environment.getActiveProfiles();
         for (String profile : activeProfiles) {
-            if ("test".equals(profile)) {
+            if ("random-prices".equals(profile)) {
                 return true;
             }
         }
