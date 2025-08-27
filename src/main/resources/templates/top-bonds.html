@@ -400,7 +400,12 @@
                         </td>
                         
                         <!-- Блок затрат -->
-                        <td class="currency costs-group" th:text="${#numbers.formatDecimal(bond.price, 0, 2)}">0.00</td>
+                        <td class="currency costs-group">
+                            <span th:text="${#numbers.formatDecimal(bond.price, 0, 2)}">0.00</span>
+                            <span th:if="${bond.tbankPricesUpdatedAt != null}" 
+                                  class="tooltip-icon" 
+                                  th:title="'Цена обновлена: ' + ${#temporals.format(bond.tbankPricesUpdatedAt, 'dd.MM.yyyy HH:mm')}">ⓘ</span>
+                        </td>
                         <td class="currency costs-group" th:text="${#numbers.formatDecimal(bond.nkd, 0, 2)}">0.00</td>
                         <td class="currency costs-group">
                             <span th:text="${#numbers.formatDecimal(bond.fee, 0, 2)}">0.00</span>
