@@ -58,7 +58,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        boolean isTestProfile = Arrays.asList(environment.getActiveProfiles()).contains("test");
+        boolean isTestProfile = Arrays.asList(environment.getActiveProfiles()).contains("no-auth");
         
         if (isTestProfile) {
             log.info("Test profile active - disabling API authentication");

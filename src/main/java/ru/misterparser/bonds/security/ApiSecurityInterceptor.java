@@ -34,8 +34,8 @@ public class ApiSecurityInterceptor implements HandlerInterceptor {
         }
 
         // Отключаем авторизацию для профиля 'test'
-        if (Arrays.asList(environment.getActiveProfiles()).contains("test")) {
-            log.debug("API security disabled for test profile: {}", requestURI);
+        if (Arrays.asList(environment.getActiveProfiles()).contains("no-auth")) {
+            log.debug("API security disabled for no-auth profile: {}", requestURI);
             return true;
         }
 
