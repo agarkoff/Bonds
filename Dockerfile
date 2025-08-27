@@ -17,9 +17,9 @@ RUN mvn clean package -DskipTests
 # Этап 2: Рабочий образ
 FROM openjdk:11-jre-slim
 
-# Устанавливаем Chromium браузер, ChromeDriver и сетевые утилиты
+# Устанавливаем Chromium браузер, ChromeDriver, сетевые утилиты и настраиваем часовой пояс
 RUN apt-get update && \
-    apt-get install -y chromium chromium-driver iputils-ping net-tools curl wget telnet dnsutils && \
+    apt-get install -y chromium chromium-driver iputils-ping net-tools curl wget telnet dnsutils tzdata && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -32,6 +32,7 @@ RUN mkdir -p drivers/linux && \
 
 # Устанавливаем переменные окружения
 ENV SPRING_PROFILES_ACTIVE=docker
+ENV TZ=Europe/Moscow
 ENV DISPLAY=:99
 ENV CHROME_BIN=/usr/bin/chromium
 ENV CHROME_DRIVER=/usr/bin/chromedriver
