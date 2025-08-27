@@ -7,6 +7,7 @@ import com.opencsv.CSVReaderBuilder;
 import com.opencsv.exceptions.CsvException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.misterparser.bonds.config.MoexConfig;
@@ -34,8 +35,8 @@ public class MoexService {
 
     private final MoexConfig moexConfig;
     private final MoexBondRepository moexBondRepository;
+    private final ApplicationContext applicationContext;
 
-    @Transactional
     public void parseBonds() {
         if (!moexConfig.isEnabled()) {
             log.info("MOEX parsing is disabled");
@@ -106,7 +107,7 @@ public class MoexService {
                     // Валидация parsed bond
                     ValidationResult validation = validateBond(bond);
                     if (validation.isValid()) {
-                        moexBondRepository.saveOrUpdate(bond);
+                        applicationContext.getBean(MoexService.class).saveBond(bond);
                         successful++;
                         log.debug("Processed bond: {}", bond.getIsin());
                     } else {
@@ -324,5 +325,10 @@ public class MoexService {
                 return null;
             }
         }
+    }
+
+    @Transactional
+    public void saveBond(MoexBond bond) {
+        moexBondRepository.saveOrUpdate(bond);
     }
 }

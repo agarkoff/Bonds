@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,8 +28,8 @@ public class TBankInstrumentsService {
 
     private final TBankConfig tBankConfig;
     private final TBankBondRepository tBankBondRepository;
+    private final ApplicationContext applicationContext;
 
-    @Transactional
     public void updateBondsData() {
         if (!tBankConfig.isEnabled()) {
             log.info("T-Bank instruments update is disabled");
@@ -189,7 +190,7 @@ public class TBankInstrumentsService {
                             log.debug("New T-Bank bond: {} (FIGI: {})", ticker, figi);
                         }
                         
-                        tBankBondRepository.saveOrUpdate(tBankBond);
+                        applicationContext.getBean(TBankInstrumentsService.class).saveTBankBond(tBankBond);
                         updated++;
                         
                         log.debug("Processed T-Bank bond: {} (FIGI: {})", ticker, figi);
@@ -224,5 +225,10 @@ public class TBankInstrumentsService {
             
             lastRequestTime = System.currentTimeMillis();
         }
+    }
+
+    @Transactional
+    public void saveTBankBond(TBankBond tBankBond) {
+        tBankBondRepository.saveOrUpdate(tBankBond);
     }
 }

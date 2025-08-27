@@ -2,6 +2,7 @@ package ru.misterparser.bonds.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.misterparser.bonds.config.CalcConfig;
@@ -29,8 +30,8 @@ public class CalculationService {
     private final CalcConfig calcConfig;
     private final BondCalculationDataRepository bondCalculationDataRepository;
     private final BondCalculationRepository bondCalculationRepository;
+    private final ApplicationContext applicationContext;
 
-    @Transactional
     public void calculateAllBonds() {
         log.info("Starting calculation for all bonds");
 
@@ -46,8 +47,7 @@ public class CalculationService {
                 processed++;
                 try {
                     if (canCalculate(bond)) {
-                        calculateBond(bond);
-                        bondCalculationRepository.saveOrUpdateCalculationData(bond);
+                        applicationContext.getBean(CalculationService.class).processBondCalculation(bond);
                         calculated++;
                         log.debug("Calculated bond: {}", bond.getIsin());
                     } else {
@@ -77,8 +77,7 @@ public class CalculationService {
             if (optionalBond.isPresent()) {
                 Bond bond = optionalBond.get();
                 if (canCalculate(bond)) {
-                    calculateBond(bond);
-                    bondCalculationRepository.saveOrUpdateCalculationData(bond);
+                    applicationContext.getBean(CalculationService.class).processBondCalculation(bond);
                     log.info("Calculation completed for bond: {}", isin);
                 } else {
                     log.warn("Cannot calculate bond {} - missing required data", isin);
@@ -90,6 +89,14 @@ public class CalculationService {
             log.error("Error calculating bond {}: {}", isin, e.getMessage());
         }
     }
+
+    @Transactional
+    public void processBondCalculation(Bond bond) {
+        Bond bondCopy = createBondCopy(bond);
+        calculateBond(bondCopy);
+        bondCalculationRepository.saveOrUpdateCalculationData(bondCopy);
+    }
+
 
     private boolean canCalculate(Bond bond) {
         return bond.getPrice() != null &&

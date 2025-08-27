@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -37,10 +38,10 @@ public class TBankMarketDataService {
     private final TBankPriceRepository tBankPriceRepository;
     private final Environment environment;
     private final CalculationService calculationService;
+    private final ApplicationContext applicationContext;
     
     private final Random random = new Random();
 
-    @Transactional
     public void updatePrices() {
         if (!tBankConfig.isEnabled()) {
             log.info("T-Bank prices update is disabled");
@@ -95,7 +96,7 @@ public class TBankMarketDataService {
                         tBankPrice.setFigi(bond.getFigi());
                         tBankPrice.setPrice(price);
                         
-                        tBankPriceRepository.saveOrUpdate(tBankPrice);
+                        applicationContext.getBean(TBankMarketDataService.class).saveTBankPrice(tBankPrice);
                         updated++;
                         log.debug("Updated price for FIGI {}: {}", bond.getFigi(), price);
                     } else {
@@ -233,5 +234,10 @@ public class TBankMarketDataService {
             
             lastRequestTime = System.currentTimeMillis();
         }
+    }
+
+    @Transactional
+    public void saveTBankPrice(TBankPrice tBankPrice) {
+        tBankPriceRepository.saveOrUpdate(tBankPrice);
     }
 }
