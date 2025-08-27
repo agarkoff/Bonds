@@ -193,6 +193,24 @@
             background: #e0a800;
         }
         
+        .btn-warning {
+            background: #fd7e14;
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background: #e8660c;
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #218838;
+        }
+        
         .editable-name {
             cursor: pointer;
             user-select: none;
@@ -378,6 +396,12 @@
                             <button class="btn-small btn-delete" th:onclick="'deleteRatingSubscription(' + ${subscription.id} + ')'">
                                 🗑️ Удалить
                             </button>
+                            <button class="btn-small" 
+                                    th:class="${subscription.enabled} ? 'btn-small btn-warning' : 'btn-small btn-success'"
+                                    th:onclick="'toggleRatingSubscription(' + ${subscription.id} + ')'">
+                                <span th:if="${subscription.enabled}">⏸️ Выключить</span>
+                                <span th:unless="${subscription.enabled}">▶️ Включить</span>
+                            </button>
                             <span th:if="${subscription.enabled}" class="status-badge status-active">Активна</span>
                             <span th:unless="${subscription.enabled}" class="status-badge status-inactive">Неактивна</span>
                         </div>
@@ -504,7 +528,6 @@
             button.textContent = "⏳ Удаление...";
             button.disabled = true;
             
-            // TODO: Implement offer subscription deletion API
             fetch(`/api/offer-subscriptions/${subscriptionId}`, {
                 method: "DELETE",
                 headers: {
@@ -526,6 +549,40 @@
             .catch(error => {
                 console.error("Error:", error);
                 alert("Ошибка при удалении: " + error.message);
+            })
+            .finally(() => {
+                button.textContent = originalText;
+                button.disabled = false;
+            });
+        }
+        
+        function toggleRatingSubscription(subscriptionId) {
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = "⏳ Изменение...";
+            button.disabled = true;
+            
+            fetch(`/api/subscriptions/${subscriptionId}/toggle`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                return response.text().then(text => {
+                    throw new Error(text || "Ошибка при изменении статуса");
+                });
+            })
+            .then(data => {
+                alert(data.message);
+                location.reload();
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("Ошибка при изменении статуса: " + error.message);
             })
             .finally(() => {
                 button.textContent = originalText;
