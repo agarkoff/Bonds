@@ -45,7 +45,7 @@ COPY --from=build /build/target/bonds-0.0.1-SNAPSHOT.jar app.jar
 RUN mkdir -p cache/raexpert docs
 
 # Открываем порт приложения
-EXPOSE 8080
+EXPOSE 443
 
 # Запускаем приложение
 ENTRYPOINT ["java", "-jar", "app.jar"]
