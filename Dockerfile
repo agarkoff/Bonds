@@ -31,7 +31,6 @@ RUN mkdir -p drivers/linux && \
     ln -s /usr/bin/chromedriver drivers/linux/chromedriver
 
 # Устанавливаем переменные окружения
-ENV SPRING_PROFILES_ACTIVE=docker
 ENV TZ=Europe/Moscow
 ENV DISPLAY=:99
 ENV CHROME_BIN=/usr/bin/chromium
