@@ -17,9 +17,9 @@ import ru.misterparser.bonds.repository.TBankPriceRepository;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.DayOfWeek;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Random;
 
@@ -36,6 +36,7 @@ public class TBankMarketDataService {
     private final TBankBondRepository tBankBondRepository;
     private final TBankPriceRepository tBankPriceRepository;
     private final Environment environment;
+    private final CalculationService calculationService;
     
     private final Random random = new Random();
 
@@ -108,6 +109,17 @@ public class TBankMarketDataService {
             }
 
             log.info("T-Bank prices statistics - Updated: {}, Skipped: {}, Errors: {}", updated, skipped, errors);
+            
+            // Запускаем автоматический пересчет показателей после обновления цен
+            if (updated > 0) {
+                log.info("Starting automatic calculation after price update");
+                try {
+                    calculationService.calculateAllBonds();
+                    log.info("Automatic calculation completed successfully");
+                } catch (Exception calcException) {
+                    log.error("Error during automatic calculation after price update", calcException);
+                }
+            }
 
         } catch (Exception e) {
             log.error("Error during T-Bank prices update", e);
