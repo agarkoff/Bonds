@@ -40,7 +40,7 @@ sources:
       instruments:
         cron: "0 0 12 * * MON-FRI"
       marketdata:
-        cron: "0 */15 9-18 * * MON-FRI"
+        cron: "0 */5 9-19 * * MON-FRI"
   ratings:
     raexpert:
       enabled: true
