@@ -114,6 +114,16 @@
             min-width: 80px;
         }
         
+        .ticker a {
+            color: #1976d2;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        
+        .ticker a:hover {
+            text-decoration: underline;
+        }
+        
         .short-name {
             max-width: 150px;
             overflow: hidden;
@@ -376,7 +386,12 @@
                 <tbody>
                     <tr th:each="bond : ${bonds}" 
                         th:class="${showOffer and bond.offerDate != null and bond.annualYieldOffer != null} ? 'offer-row' : ''">
-                        <td class="ticker" th:text="${bond.ticker}">BOND</td>
+                        <td class="ticker">
+                            <a th:href="@{'https://yandex.ru/search/?text=' + ${bond.ticker}}" 
+                               th:text="${bond.ticker}"
+                               target="_blank"
+                               rel="noopener noreferrer">BOND</a>
+                        </td>
                         <td class="short-name" th:title="${bond.shortName}">
                             <span th:text="${bond.shortName}">Название облигации</span>
                             <!-- Индикатор оферты -->
