@@ -29,6 +29,7 @@ public class BondFilteringService {
         private String searchText;
         private BigDecimal customFeePercent;
         private Integer limit;
+        private List<String> selectedRatings;
 
         // Конструкторы
         public FilterParams() {}
@@ -70,6 +71,9 @@ public class BondFilteringService {
         
         public Integer getLimit() { return limit; }
         public void setLimit(Integer limit) { this.limit = limit; }
+        
+        public List<String> getSelectedRatings() { return selectedRatings; }
+        public void setSelectedRatings(List<String> selectedRatings) { this.selectedRatings = selectedRatings; }
     }
 
     /**
@@ -135,6 +139,14 @@ public class BondFilteringService {
             return false;
         }
         
+        // Фильтр по рейтингу
+        if (params.getSelectedRatings() != null && !params.getSelectedRatings().isEmpty()) {
+            String bondRating = bond.getRatingValue();
+            if (bondRating == null || !params.getSelectedRatings().contains(bondRating)) {
+                return false;
+            }
+        }
+        
         return true;
     }
 
@@ -178,5 +190,16 @@ public class BondFilteringService {
             return bond.getAnnualYieldOffer();
         }
         return bond.getAnnualYield();
+    }
+    
+    /**
+     * Получает список всех доступных рейтингов
+     */
+    public List<String> getAllAvailableRatings() {
+        return bondRepository.findDistinctRatingValues()
+            .stream()
+            .filter(rating -> rating != null && !rating.trim().isEmpty())
+            .sorted()
+            .collect(Collectors.toList());
     }
 }

@@ -192,7 +192,7 @@
         .form-group input#yieldRange {
             width: 100px;
         }
-        
+
         .form-group input[type="checkbox"] {
             margin-right: 5px;
         }
@@ -330,6 +330,22 @@
                     <div class="search-container">
                         <input type="text" id="searchText" name="searchText" th:value="${searchText}" placeholder="Введите тикер или название">
                         <span id="searchLoading" class="search-loading" style="display: none;"></span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Рейтинги:</label>
+                    <div id="ratingsContainer" style="display: flex; flex-wrap: wrap; gap: 8px; max-width: 300px;">
+                        <div th:each="rating : ${availableRatings}" style="display: flex; align-items: center; white-space: nowrap;">
+                            <input type="checkbox" 
+                                   name="selectedRatings" 
+                                   th:id="'rating-' + ${rating}"
+                                   th:value="${rating}" 
+                                   th:checked="${selectedRatings.contains(rating)}"
+                                   style="margin-right: 4px;">
+                            <label th:for="'rating-' + ${rating}" 
+                                   th:text="${rating}" 
+                                   style="font-size: 12px; cursor: pointer; margin: 0;">AA+</label>
+                        </div>
                     </div>
                 </div>
                 <div class="form-group">
@@ -582,6 +598,21 @@
             form.submit();
         });
         
+        // Добавляем обработчик для чекбоксов рейтингов
+        const ratingsContainer = document.getElementById('ratingsContainer');
+        const ratingCheckboxes = ratingsContainer.querySelectorAll('input[type="checkbox"]');
+        ratingCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                // Сохраняем позицию курсора если поле поиска в фокусе
+                if (document.activeElement === searchInput) {
+                    saveCursorPosition();
+                }
+                
+                // Отправляем форму
+                form.submit();
+            });
+        });
+        
         // Добавляем обработчик для поля комиссии
         const feePercentInput = document.getElementById('feePercent');
         let feeTimeout;
@@ -668,6 +699,7 @@
             const includeOffer = formData.get('showOffer') === 'on';
             const searchText = formData.get('searchText') || '';
             const feePercent = formData.get('feePercent') ? parseFloat(formData.get('feePercent')) : 0.30;
+            const selectedRatings = formData.getAll('selectedRatings');
             
             // Generate automatic subscription name based on filters
             let subscriptionName = `Рейтинг`;
@@ -683,6 +715,9 @@
             if (searchText) {
                 subscriptionName += ` "${searchText}"`;
             }
+            if (selectedRatings.length > 0) {
+                subscriptionName += ` рейтинги: ${selectedRatings.join(', ')}`;
+            }
             subscriptionName += ` (${tickerCount} тикеров)`;
 
             const subscription = {
@@ -694,7 +729,8 @@
                 includeOffer: includeOffer,
                 minMaturityWeeks: minWeeks,
                 maxMaturityWeeks: maxWeeks,
-                feePercent: feePercent
+                feePercent: feePercent,
+                selectedRatings: selectedRatings
             };
 
             // Save button text change

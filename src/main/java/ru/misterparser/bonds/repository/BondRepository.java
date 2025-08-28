@@ -147,4 +147,10 @@ public class BondRepository {
                     "ORDER BY offer_date ASC";
         return jdbcTemplate.query(sql, bondRowMapper);
     }
+    
+    public List<String> findDistinctRatingValues() {
+        return jdbcTemplate.query(
+            "SELECT DISTINCT rating_value, rating_code FROM bonds WHERE rating_value IS NOT NULL ORDER BY rating_code ASC, rating_value ASC",
+            (rs, rowNum) -> rs.getString("rating_value"));
+    }
 }

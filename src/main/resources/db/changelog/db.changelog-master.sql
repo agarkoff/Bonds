@@ -334,3 +334,6 @@ LEFT JOIN tbank_bonds tb ON tb.ticker = mb.isin OR tb.figi = mb.isin
 LEFT JOIN tbank_prices tp ON tp.figi = tb.figi
 LEFT JOIN dohod_ratings dr ON dr.isin = mb.isin
 INNER JOIN bonds_calc bc ON bc.isin = mb.isin;
+
+--changeset bonds:23
+ALTER TABLE rating_subscription ADD COLUMN selected_ratings TEXT;

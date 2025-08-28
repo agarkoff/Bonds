@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -23,6 +24,7 @@ public class RatingSubscription {
     private Integer minMaturityWeeks;
     private Integer maxMaturityWeeks;
     private BigDecimal feePercent;
+    private List<String> selectedRatings;
     private boolean enabled = true;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -31,7 +33,7 @@ public class RatingSubscription {
     public RatingSubscription(Long telegramUserId, String name, int periodHours, 
                             BigDecimal minYield, BigDecimal maxYield, int tickerCount, 
                             boolean includeOffer, Integer minMaturityWeeks, Integer maxMaturityWeeks,
-                            BigDecimal feePercent) {
+                            BigDecimal feePercent, List<String> selectedRatings) {
         this.telegramUserId = telegramUserId;
         this.name = name;
         this.periodHours = periodHours;
@@ -42,6 +44,7 @@ public class RatingSubscription {
         this.minMaturityWeeks = minMaturityWeeks;
         this.maxMaturityWeeks = maxMaturityWeeks;
         this.feePercent = feePercent;
+        this.selectedRatings = selectedRatings;
         this.enabled = true;
     }
 }

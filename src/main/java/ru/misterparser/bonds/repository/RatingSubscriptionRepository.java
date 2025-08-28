@@ -14,15 +14,21 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Repository
 public class RatingSubscriptionRepository {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+    
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private final RowMapper<RatingSubscription> subscriptionRowMapper = new RowMapper<RatingSubscription>() {
         @Override
@@ -40,6 +46,18 @@ public class RatingSubscriptionRepository {
             subscription.setMaxMaturityWeeks(rs.getObject("max_maturity_weeks", Integer.class));
             subscription.setFeePercent(rs.getBigDecimal("fee_percent"));
             subscription.setEnabled(rs.getBoolean("enabled"));
+            
+            // Parse selected_ratings JSON
+            String selectedRatingsJson = rs.getString("selected_ratings");
+            if (selectedRatingsJson != null && !selectedRatingsJson.trim().isEmpty()) {
+                try {
+                    List<String> selectedRatings = objectMapper.readValue(selectedRatingsJson, new TypeReference<List<String>>(){});
+                    subscription.setSelectedRatings(selectedRatings);
+                } catch (Exception e) {
+                    // Fallback: try parsing as comma-separated values
+                    subscription.setSelectedRatings(Arrays.asList(selectedRatingsJson.split(",")));
+                }
+            }
             subscription.setCreatedAt(rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toLocalDateTime() : null);
             subscription.setUpdatedAt(rs.getTimestamp("updated_at") != null ? rs.getTimestamp("updated_at").toLocalDateTime() : null);
             subscription.setLastSentAt(rs.getTimestamp("last_sent_at") != null ? rs.getTimestamp("last_sent_at").toLocalDateTime() : null);
@@ -60,8 +78,8 @@ public class RatingSubscriptionRepository {
 
     private RatingSubscription create(RatingSubscription subscription) {
         String sql = "INSERT INTO rating_subscription (telegram_user_id, name, period_hours, min_yield, max_yield, " +
-                    "ticker_count, include_offer, min_maturity_weeks, max_maturity_weeks, fee_percent, enabled) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    "ticker_count, include_offer, min_maturity_weeks, max_maturity_weeks, fee_percent, enabled, selected_ratings) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
@@ -77,6 +95,17 @@ public class RatingSubscriptionRepository {
             ps.setObject(9, subscription.getMaxMaturityWeeks());
             ps.setBigDecimal(10, subscription.getFeePercent());
             ps.setBoolean(11, subscription.isEnabled());
+            
+            // Serialize selected_ratings as JSON
+            String selectedRatingsJson = null;
+            if (subscription.getSelectedRatings() != null && !subscription.getSelectedRatings().isEmpty()) {
+                try {
+                    selectedRatingsJson = objectMapper.writeValueAsString(subscription.getSelectedRatings());
+                } catch (Exception e) {
+                    selectedRatingsJson = null;
+                }
+            }
+            ps.setString(12, selectedRatingsJson);
             return ps;
         }, keyHolder);
         
@@ -95,12 +124,23 @@ public class RatingSubscriptionRepository {
     private RatingSubscription update(RatingSubscription subscription) {
         String sql = "UPDATE rating_subscription SET name = ?, period_hours = ?, min_yield = ?, max_yield = ?, " +
                     "ticker_count = ?, include_offer = ?, min_maturity_weeks = ?, max_maturity_weeks = ?, " +
-                    "fee_percent = ?, enabled = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+                    "fee_percent = ?, enabled = ?, selected_ratings = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+        
+        // Serialize selected_ratings as JSON
+        String selectedRatingsJson = null;
+        if (subscription.getSelectedRatings() != null && !subscription.getSelectedRatings().isEmpty()) {
+            try {
+                selectedRatingsJson = objectMapper.writeValueAsString(subscription.getSelectedRatings());
+            } catch (Exception e) {
+                selectedRatingsJson = null;
+            }
+        }
         
         jdbcTemplate.update(sql, subscription.getName(), subscription.getPeriodHours(), 
                           subscription.getMinYield(), subscription.getMaxYield(), subscription.getTickerCount(),
                           subscription.isIncludeOffer(), subscription.getMinMaturityWeeks(), 
-                          subscription.getMaxMaturityWeeks(), subscription.getFeePercent(), subscription.isEnabled(), subscription.getId());
+                          subscription.getMaxMaturityWeeks(), subscription.getFeePercent(), subscription.isEnabled(), 
+                          selectedRatingsJson, subscription.getId());
         
         return findById(subscription.getId()).orElse(subscription);
     }

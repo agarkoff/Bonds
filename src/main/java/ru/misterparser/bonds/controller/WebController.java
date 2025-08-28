@@ -26,6 +26,7 @@ public class WebController {
                           @RequestParam(defaultValue = "") String searchText,
                           @RequestParam(defaultValue = "0.30") double feePercent,
                           @RequestParam(defaultValue = "0-50") String yieldRange,
+                          @RequestParam(required = false) List<String> selectedRatings,
                           Model model) {
         try {
             // Парсим параметр weeksToMaturity
@@ -82,8 +83,8 @@ public class WebController {
                 }
             }
             
-            log.info("Loading top bonds page with limit: {}, weeksToMaturity: '{}' (parsed: {}-{}), showOffer: {}, searchText: '{}', feePercent: {}, yieldRange: '{}' (parsed: {}-{})", 
-                       limit, weeksToMaturity, minWeeksToMaturity, maxWeeksToMaturity, showOffer, searchText, feePercent, yieldRange, minYield, maxYield);
+            log.info("Loading top bonds page with limit: {}, weeksToMaturity: '{}' (parsed: {}-{}), showOffer: {}, searchText: '{}', feePercent: {}, yieldRange: '{}' (parsed: {}-{}), selectedRatings: {}", 
+                       limit, weeksToMaturity, minWeeksToMaturity, maxWeeksToMaturity, showOffer, searchText, feePercent, yieldRange, minYield, maxYield, selectedRatings);
             
             // Создаём параметры фильтрации  
             BondFilteringService.FilterParams params = new BondFilteringService.FilterParams();
@@ -95,6 +96,7 @@ public class WebController {
             params.setSearchText(searchText);
             params.setCustomFeePercent(BigDecimal.valueOf(feePercent));
             params.setLimit(limit);
+            params.setSelectedRatings(selectedRatings);
             
             // Получаем отфильтрованные и отсортированные облигации
             List<Bond> bonds = bondFilteringService.getFilteredAndSortedBonds(params);
@@ -111,6 +113,8 @@ public class WebController {
             model.addAttribute("yieldRange", yieldRange);
             model.addAttribute("minYield", minYield);
             model.addAttribute("maxYield", maxYield);
+            model.addAttribute("selectedRatings", selectedRatings != null ? selectedRatings : List.of());
+            model.addAttribute("availableRatings", bondFilteringService.getAllAvailableRatings());
             
             return "top-bonds";
             

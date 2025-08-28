@@ -119,6 +119,7 @@ public class RatingNotificationService {
         params.setIncludeOffer(subscription.isIncludeOffer());
         params.setCustomFeePercent(subscription.getFeePercent()); // Используем комиссию из подписки
         params.setLimit(null); // Без ограничений, ограничим после
+        params.setSelectedRatings(subscription.getSelectedRatings()); // Используем рейтинги из подписки
         
         // Используем единый сервис фильтрации и сортировки
         return bondFilteringService.getFilteredAndSortedBonds(params);
