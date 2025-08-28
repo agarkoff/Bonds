@@ -33,14 +33,27 @@ public class ApiSecurityInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        // Отключаем авторизацию для профиля 'test'
+        // Отключаем авторизацию для профиля 'no-auth'
         if (Arrays.asList(environment.getActiveProfiles()).contains("no-auth")) {
             log.debug("API security disabled for no-auth profile: {}", requestURI);
             return true;
         }
 
-        log.debug("API security check for: {}", requestURI);
+        // Разделяем административные и пользовательские API
+        boolean isAdminAPI = requestURI.startsWith("/admin/api");
+        boolean isUserAPI = requestURI.startsWith("/api") && !isAdminAPI;
+        boolean isSubscriptionAPI = requestURI.startsWith("/api/subscriptions") || requestURI.startsWith("/api/offer-subscriptions");
 
+        log.debug("API security check for: {} (admin: {}, user: {}, subscription: {})", 
+            requestURI, isAdminAPI, isUserAPI, isSubscriptionAPI);
+
+        // Пользовательские API (не подписки) - открытый доступ
+        if (isUserAPI && !isSubscriptionAPI) {
+            log.debug("Public API access granted: {}", requestURI);
+            return true;
+        }
+
+        // Административные API и подписки требуют авторизации
         try {
             // Получаем текущего пользователя через сессию
             TelegramUser currentUser = telegramAuthService.getCurrentUserFromSession(request);
@@ -51,12 +64,14 @@ public class ApiSecurityInterceptor implements HandlerInterceptor {
                 return false;
             }
 
-            if (!AUTHORIZED_USER_ID.equals(currentUser.getId())) {
-                log.warn("Forbidden API access attempt by user ID {} to: {}", currentUser.getId(), requestURI);
-                sendForbiddenResponse(response, "Доступ запрещен: требуется пользователь с ID " + AUTHORIZED_USER_ID);
+            // Для административных API требуется пользователь с ID = 1
+            if (isAdminAPI && !AUTHORIZED_USER_ID.equals(currentUser.getId())) {
+                log.warn("Forbidden admin API access attempt by user ID {} to: {}", currentUser.getId(), requestURI);
+                sendForbiddenResponse(response, "Доступ запрещен: требуются права администратора");
                 return false;
             }
 
+            // Для подписок достаточно быть авторизованным пользователем
             log.debug("API access granted for user ID {} to: {}", currentUser.getId(), requestURI);
             return true;
 

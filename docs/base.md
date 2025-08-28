@@ -72,18 +72,6 @@ Data Sources → Services → Repositories → Database → Web Interface
 
 ## Мониторинг и эксплуатация
 
-### API Endpoints
-- `GET /top.html` - веб-интерфейс с топ-облигациями
-- `POST /api/moex/parse` - запуск парсинга MOEX
-- `POST /api/tbank/bonds/update` - обновление данных T-Bank
-- `POST /api/tbank/prices/update` - обновление цен T-Bank
-- `POST /api/ratings/update` - обновление рейтингов
-- `POST /api/bonds/calculate` - расчет показателей доходности
-
-API должно быть доступно только пользователю с ID 1.
-Этот функционал проверки должен быть централизован для всех конечных точек, начинающихся с /api
-При запуске с Spring-профилем no-auth авторизация на /api должна быть выключена
-
 ### Планировщики задач
 Все задачи настраиваются через cron-выражения в конфигурации:
 - Обновление данных с внешних источников
