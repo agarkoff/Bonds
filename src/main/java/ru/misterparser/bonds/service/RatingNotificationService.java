@@ -126,6 +126,11 @@ public class RatingNotificationService {
     }
 
     /**
+     * Максимальная длина сообщения в Telegram
+     */
+    private static final int MAX_TELEGRAM_MESSAGE_LENGTH = 4096;
+
+    /**
      * Отправляет сообщение с облигациями
      */
     private void sendBondsMessage(Long chatId, RatingSubscription subscription, List<Bond> bonds, boolean forceMode) {
@@ -234,7 +239,10 @@ public class RatingNotificationService {
         message.append("💡 *Данные обновляются ежедневно*\n");
         message.append("⏰ Следующая отправка через ").append(subscription.getPeriodHours()).append(" ч.");
         
-        telegramBotService.sendMessage(chatId, message.toString());
+        // Проверяем и обрезаем сообщение при необходимости
+        String finalMessage = ensureMessageLength(message.toString(), subscription.getName());
+        
+        telegramBotService.sendMessage(chatId, finalMessage);
     }
 
     /**
@@ -277,6 +285,36 @@ public class RatingNotificationService {
         
         message.append("\n💡 Попробуйте изменить параметры фильтрации для получения результатов.");
         
-        telegramBotService.sendMessage(chatId, message.toString());
+        // Проверяем длину сообщения (хотя сообщение о пустых результатах обычно короткое)
+        String finalMessage = ensureMessageLength(message.toString(), subscription.getName());
+        
+        telegramBotService.sendMessage(chatId, finalMessage);
+    }
+
+    /**
+     * Обеспечивает соблюдение лимита длины сообщения Telegram (4096 символов)
+     */
+    private String ensureMessageLength(String message, String subscriptionName) {
+        if (message.length() <= MAX_TELEGRAM_MESSAGE_LENGTH) {
+            return message;
+        }
+
+        log.warn("Message too long for Telegram ({} chars), truncating for subscription: {}", 
+                 message.length(), subscriptionName);
+
+        // Обрезаем сообщение, оставляя место для предупреждения
+        String truncationWarning = "\n\n⚠️ *Сообщение обрезано из-за лимита Telegram (4096 символов)*";
+        int maxContentLength = MAX_TELEGRAM_MESSAGE_LENGTH - truncationWarning.length();
+
+        // Ищем последний перенос строки перед лимитом, чтобы не обрезать посередине облигации
+        String truncated = message.substring(0, Math.min(maxContentLength, message.length()));
+        int lastNewline = truncated.lastIndexOf("\n\n");
+        
+        if (lastNewline > 0 && lastNewline > maxContentLength * 0.8) {
+            // Если нашли подходящий перенос строки в последних 20% сообщения
+            truncated = truncated.substring(0, lastNewline);
+        }
+
+        return truncated + truncationWarning;
     }
 }
