@@ -195,6 +195,14 @@ public class RatingSubscriptionRepository {
         String sql = "UPDATE rating_subscription SET name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
         jdbcTemplate.update(sql, newName, subscriptionId);
     }
+    
+    /**
+     * Обновляет интервал подписки
+     */
+    public void updatePeriodHours(Long subscriptionId, int periodHours) {
+        String sql = "UPDATE rating_subscription SET period_hours = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+        jdbcTemplate.update(sql, periodHours, subscriptionId);
+    }
 
     /**
      * Удаляет подписку

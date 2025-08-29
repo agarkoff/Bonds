@@ -407,7 +407,20 @@
                         </div>
                     </div>
                     <div class="subscription-details">
-                        <p><strong>Периодичность:</strong> каждые <span th:text="${subscription.periodHours}">24</span> часа</p>
+                        <p><strong>Периодичность:</strong> каждые 
+                            <span class="editable-name" 
+                                  th:onclick="'editSubscriptionPeriod(' + ${subscription.id} + ')'"
+                                  th:title="'Нажмите для редактирования интервала'"
+                                  th:id="'period-text-' + ${subscription.id}" 
+                                  th:text="${subscription.periodHours}">24</span>
+                            <div th:id="'period-edit-' + ${subscription.id}" style="display: none;">
+                                <input type="number" class="edit-input" th:id="'period-input-' + ${subscription.id}" th:value="${subscription.periodHours}" min="1" onclick="event.stopPropagation();">
+                                <div class="save-cancel-buttons" onclick="event.stopPropagation();">
+                                    <button class="btn-tiny btn-save" th:onclick="'saveSubscriptionPeriod(' + ${subscription.id} + ')'">Сохранить</button>
+                                    <button class="btn-tiny btn-cancel" th:onclick="'cancelEditPeriod(' + ${subscription.id} + ')'">Отмена</button>
+                                </div>
+                            </div>
+                            часа</p>
                         <p><strong>Количество тикеров:</strong> <span th:text="${subscription.tickerCount}">10</span></p>
                         <p th:if="${subscription.minYield != null or subscription.maxYield != null}">
                             <strong>Доходность:</strong>
@@ -673,17 +686,117 @@
             editElement.style.display = 'none';
         }
         
+        function editSubscriptionPeriod(subscriptionId) {
+            const textElement = document.getElementById(`period-text-${subscriptionId}`);
+            const editElement = document.getElementById(`period-edit-${subscriptionId}`);
+            const inputElement = document.getElementById(`period-input-${subscriptionId}`);
+            
+            // Переключаемся в режим редактирования
+            textElement.style.display = 'none';
+            editElement.style.display = 'block';
+            
+            // Фокусируемся на input и выделяем текст
+            inputElement.focus();
+            inputElement.select();
+        }
+        
+        function saveSubscriptionPeriod(subscriptionId) {
+            console.log('saveSubscriptionPeriod called with id:', subscriptionId);
+            
+            const textElement = document.getElementById(`period-text-${subscriptionId}`);
+            const editElement = document.getElementById(`period-edit-${subscriptionId}`);
+            const inputElement = document.getElementById(`period-input-${subscriptionId}`);
+            const saveButton = editElement.querySelector('.btn-save');
+            
+            const newPeriodHours = parseInt(inputElement.value, 10);
+            const currentPeriodHours = parseInt(textElement.textContent, 10);
+            
+            if (isNaN(newPeriodHours) || newPeriodHours <= 0) {
+                alert('Интервал должен быть положительным числом');
+                return;
+            }
+            
+            if (newPeriodHours === currentPeriodHours) {
+                cancelEditPeriod(subscriptionId);
+                return;
+            }
+            
+            // Показываем состояние загрузки
+            const originalSaveText = saveButton.textContent;
+            saveButton.textContent = '⏳';
+            saveButton.disabled = true;
+            
+            fetch(`/api/subscriptions/${subscriptionId}`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    periodHours: newPeriodHours.toString()
+                })
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                return response.text().then(text => {
+                    throw new Error(text || 'Ошибка при обновлении');
+                });
+            })
+            .then(data => {
+                // Обновляем текст и возвращаемся в режим просмотра
+                textElement.textContent = newPeriodHours;
+                textElement.style.display = '';
+                editElement.style.display = 'none';
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert('Ошибка при обновлении: ' + error.message);
+            })
+            .finally(() => {
+                saveButton.textContent = originalSaveText;
+                saveButton.disabled = false;
+            });
+        }
+        
+        function cancelEditPeriod(subscriptionId) {
+            console.log('cancelEditPeriod called with id:', subscriptionId);
+            
+            const textElement = document.getElementById(`period-text-${subscriptionId}`);
+            const editElement = document.getElementById(`period-edit-${subscriptionId}`);
+            const inputElement = document.getElementById(`period-input-${subscriptionId}`);
+            
+            // Восстанавливаем исходное значение и переключаемся в режим просмотра
+            inputElement.value = textElement.textContent;
+            textElement.style.display = '';
+            editElement.style.display = 'none';
+        }
+        
         // Обработчик для сохранения по Enter и отмены по Escape
         document.addEventListener('keydown', function(event) {
             if (event.target.classList.contains('edit-input')) {
-                const subscriptionId = event.target.id.match(/name-input-(\d+)/)[1];
+                const inputId = event.target.id;
                 
-                if (event.key === 'Enter') {
-                    event.preventDefault();
-                    saveSubscriptionName(subscriptionId);
-                } else if (event.key === 'Escape') {
-                    event.preventDefault();
-                    cancelEditName(subscriptionId);
+                if (inputId.includes('name-input-')) {
+                    const subscriptionId = inputId.match(/name-input-(\d+)/)[1];
+                    
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        saveSubscriptionName(subscriptionId);
+                    } else if (event.key === 'Escape') {
+                        event.preventDefault();
+                        cancelEditName(subscriptionId);
+                    }
+                } else if (inputId.includes('period-input-')) {
+                    const subscriptionId = inputId.match(/period-input-(\d+)/)[1];
+                    
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        saveSubscriptionPeriod(subscriptionId);
+                    } else if (event.key === 'Escape') {
+                        event.preventDefault();
+                        cancelEditPeriod(subscriptionId);
+                    }
                 }
             }
         });

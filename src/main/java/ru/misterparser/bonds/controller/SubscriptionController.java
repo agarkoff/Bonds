@@ -236,7 +236,7 @@ public class SubscriptionController {
      * Обновляет название подписки
      */
     @PatchMapping("/{id}")
-    public ResponseEntity<?> updateSubscriptionName(@PathVariable Long id, 
+    public ResponseEntity<?> updateSubscription(@PathVariable Long id,
                                                @RequestBody Map<String, String> updateData,
                                                Authentication authentication) {
         try {
@@ -257,19 +257,47 @@ public class SubscriptionController {
                     .body(Map.of("error", "Доступ запрещен"));
             }
 
+            // Обработка обновления названия
             String newName = updateData.get("name");
-            if (newName == null || newName.trim().isEmpty()) {
-                return ResponseEntity.badRequest()
-                    .body(Map.of("error", "Название подписки не может быть пустым"));
+            if (newName != null) {
+                if (newName.trim().isEmpty()) {
+                    return ResponseEntity.badRequest()
+                        .body(Map.of("error", "Название подписки не может быть пустым"));
+                }
+
+                subscriptionRepository.updateName(id, newName.trim());
+                
+                log.info("Обновлено название подписки для пользователя {}: {} -> {}", 
+                           currentUser.getId(), subscription.get().getName(), newName.trim());
+
+                return ResponseEntity.ok(Map.of("message", "Название подписки обновлено", "name", newName.trim()));
             }
-
-            // Обновляем название
-            subscriptionRepository.updateName(id, newName.trim());
             
-            log.info("Обновлено название подписки для пользователя {}: {} -> {}", 
-                       currentUser.getId(), subscription.get().getName(), newName.trim());
+            // Обработка обновления интервала
+            String periodHoursStr = updateData.get("periodHours");
+            if (periodHoursStr != null) {
+                try {
+                    int periodHours = Integer.parseInt(periodHoursStr);
+                    if (periodHours <= 0) {
+                        return ResponseEntity.badRequest()
+                            .body(Map.of("error", "Интервал должен быть положительным числом"));
+                    }
+                    
+                    subscriptionRepository.updatePeriodHours(id, periodHours);
+                    
+                    log.info("Обновлен интервал подписки для пользователя {}: {} -> {} ч", 
+                               currentUser.getId(), subscription.get().getName(), periodHours);
 
-            return ResponseEntity.ok(Map.of("message", "Название подписки обновлено", "name", newName.trim()));
+                    return ResponseEntity.ok(Map.of("message", "Интервал подписки обновлен", "periodHours", periodHours));
+                    
+                } catch (NumberFormatException e) {
+                    return ResponseEntity.badRequest()
+                        .body(Map.of("error", "Интервал должен быть числом"));
+                }
+            }
+            
+            return ResponseEntity.badRequest()
+                .body(Map.of("error", "Не указано поле для обновления"));
 
         } catch (Exception e) {
             log.error("Ошибка при обновлении подписки", e);
