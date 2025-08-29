@@ -7,7 +7,9 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import ru.misterparser.bonds.model.Bond;
+import ru.misterparser.bonds.model.UserFilterSettings;
 import ru.misterparser.bonds.service.BondFilteringService;
+import ru.misterparser.bonds.service.UserFilterSettingsService;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -18,23 +20,40 @@ import java.util.List;
 public class WebController {
 
     private final BondFilteringService bondFilteringService;
+    private final UserFilterSettingsService userFilterSettingsService;
 
     @GetMapping("/")
-    public String topBonds(@RequestParam(defaultValue = "50") int limit,
-                          @RequestParam(defaultValue = "0-26") String weeksToMaturity,
-                          @RequestParam(defaultValue = "false") boolean showOffer,
-                          @RequestParam(defaultValue = "") String searchText,
-                          @RequestParam(defaultValue = "0.30") double feePercent,
-                          @RequestParam(defaultValue = "0-50") String yieldRange,
+    public String topBonds(@RequestParam(required = false) Integer limit,
+                          @RequestParam(required = false) String weeksToMaturity,
+                          @RequestParam(required = false) Boolean showOffer,
+                          @RequestParam(required = false) String searchText,
+                          @RequestParam(required = false) Double feePercent,
+                          @RequestParam(required = false) String yieldRange,
                           @RequestParam(required = false) List<String> selectedRatings,
                           Model model) {
         try {
+            // Получаем настройки пользователя или значения по умолчанию
+            UserFilterSettings userSettings = userFilterSettingsService.getCurrentUserSettings();
+            
+            // Используем параметры запроса если они переданы, иначе берем из настроек пользователя
+            int finalLimit = limit != null ? limit : userSettings.getLimit();
+            String finalWeeksToMaturity = weeksToMaturity != null ? weeksToMaturity : userSettings.getWeeksToMaturity();
+            boolean finalShowOffer = showOffer != null ? showOffer : userSettings.getShowOffer();
+            String finalSearchText = searchText != null ? searchText : userSettings.getSearchText();
+            double finalFeePercent = feePercent != null ? feePercent : userSettings.getFeePercent();
+            String finalYieldRange = yieldRange != null ? yieldRange : userSettings.getYieldRange();
+            List<String> finalSelectedRatings = selectedRatings != null ? selectedRatings : userSettings.getSelectedRatingsList();
+            
+            // Сохраняем настройки пользователя если есть изменения
+            userFilterSettingsService.saveSettingsFromParams(finalLimit, finalWeeksToMaturity, finalShowOffer, 
+                finalSearchText, finalFeePercent, finalYieldRange, finalSelectedRatings);
+            
             // Парсим параметр weeksToMaturity
             int minWeeksToMaturity;
             int maxWeeksToMaturity;
             
-            if (weeksToMaturity.contains("-")) {
-                String[] parts = weeksToMaturity.split("-", 2);
+            if (finalWeeksToMaturity.contains("-")) {
+                String[] parts = finalWeeksToMaturity.split("-", 2);
                 try {
                     minWeeksToMaturity = Integer.parseInt(parts[0].trim());
                     maxWeeksToMaturity = Integer.parseInt(parts[1].trim());
@@ -45,7 +64,7 @@ public class WebController {
             } else {
                 try {
                     minWeeksToMaturity = 0;
-                    maxWeeksToMaturity = Integer.parseInt(weeksToMaturity.trim());
+                    maxWeeksToMaturity = Integer.parseInt(finalWeeksToMaturity.trim());
                 } catch (NumberFormatException e) {
                     minWeeksToMaturity = 0;
                     maxWeeksToMaturity = 26;
@@ -56,8 +75,8 @@ public class WebController {
             double minYield;
             double maxYield;
             
-            if (yieldRange.contains("-")) {
-                String[] parts = yieldRange.split("-", 2);
+            if (finalYieldRange.contains("-")) {
+                String[] parts = finalYieldRange.split("-", 2);
                 try {
                     minYield = Double.parseDouble(parts[0].trim());
                     maxYield = Double.parseDouble(parts[1].trim());
@@ -73,7 +92,7 @@ public class WebController {
             } else {
                 try {
                     minYield = 0;
-                    maxYield = Double.parseDouble(yieldRange.trim());
+                    maxYield = Double.parseDouble(finalYieldRange.trim());
                     if (maxYield <= 0) {
                         maxYield = 50;
                     }
@@ -84,7 +103,7 @@ public class WebController {
             }
             
             log.info("Loading top bonds page with limit: {}, weeksToMaturity: '{}' (parsed: {}-{}), showOffer: {}, searchText: '{}', feePercent: {}, yieldRange: '{}' (parsed: {}-{}), selectedRatings: {}", 
-                       limit, weeksToMaturity, minWeeksToMaturity, maxWeeksToMaturity, showOffer, searchText, feePercent, yieldRange, minYield, maxYield, selectedRatings);
+                       finalLimit, finalWeeksToMaturity, minWeeksToMaturity, maxWeeksToMaturity, finalShowOffer, finalSearchText, finalFeePercent, finalYieldRange, minYield, maxYield, finalSelectedRatings);
             
             // Создаём параметры фильтрации  
             BondFilteringService.FilterParams params = new BondFilteringService.FilterParams();
@@ -92,28 +111,28 @@ public class WebController {
             params.setMaxWeeksToMaturity(maxWeeksToMaturity);
             params.setMinYield(BigDecimal.valueOf(minYield));
             params.setMaxYield(BigDecimal.valueOf(maxYield));
-            params.setIncludeOffer(showOffer);
-            params.setSearchText(searchText);
-            params.setCustomFeePercent(BigDecimal.valueOf(feePercent));
-            params.setLimit(limit);
-            params.setSelectedRatings(selectedRatings);
+            params.setIncludeOffer(finalShowOffer);
+            params.setSearchText(finalSearchText);
+            params.setCustomFeePercent(BigDecimal.valueOf(finalFeePercent));
+            params.setLimit(finalLimit);
+            params.setSelectedRatings(finalSelectedRatings);
             
             // Получаем отфильтрованные и отсортированные облигации
             List<Bond> bonds = bondFilteringService.getFilteredAndSortedBonds(params);
             
             model.addAttribute("bonds", bonds);
             model.addAttribute("totalBonds", bonds.size());
-            model.addAttribute("limit", limit);
-            model.addAttribute("weeksToMaturity", weeksToMaturity);
+            model.addAttribute("limit", finalLimit);
+            model.addAttribute("weeksToMaturity", finalWeeksToMaturity);
             model.addAttribute("minWeeksToMaturity", minWeeksToMaturity);
             model.addAttribute("maxWeeksToMaturity", maxWeeksToMaturity);
-            model.addAttribute("showOffer", showOffer);
-            model.addAttribute("searchText", searchText);
-            model.addAttribute("feePercent", feePercent);
-            model.addAttribute("yieldRange", yieldRange);
+            model.addAttribute("showOffer", finalShowOffer);
+            model.addAttribute("searchText", finalSearchText);
+            model.addAttribute("feePercent", finalFeePercent);
+            model.addAttribute("yieldRange", finalYieldRange);
             model.addAttribute("minYield", minYield);
             model.addAttribute("maxYield", maxYield);
-            model.addAttribute("selectedRatings", selectedRatings != null ? selectedRatings : List.of());
+            model.addAttribute("selectedRatings", finalSelectedRatings != null ? finalSelectedRatings : List.of());
             model.addAttribute("availableRatings", bondFilteringService.getAllAvailableRatings());
             
             return "top-bonds";

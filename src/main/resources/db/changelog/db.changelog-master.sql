@@ -337,3 +337,25 @@ INNER JOIN bonds_calc bc ON bc.isin = mb.isin;
 
 --changeset bonds:23
 ALTER TABLE rating_subscription ADD COLUMN selected_ratings TEXT;
+
+--changeset bonds:24
+CREATE TABLE user_filter_settings (
+    id SERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    limit_value INTEGER DEFAULT 50,
+    weeks_to_maturity VARCHAR(50) DEFAULT '0-26',
+    fee_percent DECIMAL(5,4) DEFAULT 0.30,
+    yield_range VARCHAR(50) DEFAULT '0-50',
+    search_text TEXT,
+    show_offer BOOLEAN DEFAULT FALSE,
+    selected_ratings TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_user_filter_settings_telegram_user 
+    FOREIGN KEY (user_id) REFERENCES telegram_users(id) ON DELETE CASCADE,
+    
+    CONSTRAINT unique_user_settings UNIQUE(user_id)
+);
+
+CREATE INDEX idx_user_filter_settings_user_id ON user_filter_settings(user_id);
