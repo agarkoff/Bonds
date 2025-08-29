@@ -16,7 +16,7 @@ public class RatingNotificationScheduler {
     /**
      * Запускается каждый час для проверки подписок на рейтинг
      */
-    @Scheduled(cron = "0 0 * * * *") // каждый час в начале часа
+    @Scheduled(cron = "0 */5 * * * *") // каждые 5 минут
     public void processRatingSubscriptions() {
         log.info("Запуск планировщика уведомлений по подпискам на рейтинг");
         
