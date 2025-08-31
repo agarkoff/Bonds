@@ -80,27 +80,8 @@ public class BondFilteringService {
      * Получает отфильтрованный и отсортированный список облигаций
      */
     public List<Bond> getFilteredAndSortedBonds(FilterParams params) {
-        // Устанавливаем значения по умолчанию
-        int minWeeks = params.getMinWeeksToMaturity() != null ? params.getMinWeeksToMaturity() : 0;
-        int maxWeeks = params.getMaxWeeksToMaturity() != null ? params.getMaxWeeksToMaturity() : 520;
-        boolean showOffer = params.getIncludeOffer() != null ? params.getIncludeOffer() : false;
-        double minYieldDouble = params.getMinYield() != null ? params.getMinYield().doubleValue() : 0.0;
-        double maxYieldDouble = params.getMaxYield() != null ? params.getMaxYield().doubleValue() : 100.0;
-        
-        // Получаем базовый список облигаций
-        List<Bond> originalBonds = bondRepository.findTopByAnnualYieldAndMaturityRange(
-            minWeeks, maxWeeks, showOffer, minYieldDouble, maxYieldDouble);
-        
-        // Применяем текстовый фильтр если нужно
-        if (params.getSearchText() != null && !params.getSearchText().trim().isEmpty()) {
-            String searchPattern = params.getSearchText().trim().toLowerCase();
-            originalBonds = originalBonds.stream()
-                .filter(bond -> 
-                    (bond.getTicker() != null && bond.getTicker().toLowerCase().contains(searchPattern)) ||
-                    (bond.getShortName() != null && bond.getShortName().toLowerCase().contains(searchPattern))
-                )
-                .collect(Collectors.toList());
-        }
+        // Получаем все облигации для фильтрации в бэкенде
+        List<Bond> originalBonds = bondRepository.findAllBondsForFiltering();
         
         // Пересчитываем с кастомной комиссией если нужно
         List<Bond> bonds = originalBonds;
@@ -110,7 +91,9 @@ public class BondFilteringService {
                 .collect(Collectors.toList());
         }
         
-        // Применяем фильтры и сортировку
+        boolean showOffer = params.getIncludeOffer() != null ? params.getIncludeOffer() : false;
+        
+        // Применяем все фильтры в бэкенде
         return bonds.stream()
             .filter(bond -> filterBond(bond, params))
             .sorted(createBondComparator(showOffer))
@@ -119,7 +102,7 @@ public class BondFilteringService {
     }
 
     /**
-     * Фильтрует облигацию по параметрам
+     * Фильтрует облигацию по всем параметрам
      */
     private boolean filterBond(Bond bond, FilterParams params) {
         boolean showOffer = params.getIncludeOffer() != null ? params.getIncludeOffer() : false;
@@ -129,14 +112,32 @@ public class BondFilteringService {
         
         if (yield == null) return false;
         
-        // Фильтр по минимальной доходности
+        // Фильтр по доходности
         if (params.getMinYield() != null && yield.compareTo(params.getMinYield()) < 0) {
             return false;
         }
-        
-        // Фильтр по максимальной доходности
         if (params.getMaxYield() != null && yield.compareTo(params.getMaxYield()) > 0) {
             return false;
+        }
+        
+        // Ограничение по максимальной доходности 50%
+        if (yield.compareTo(BigDecimal.valueOf(50)) > 0) {
+            return false;
+        }
+        
+        // Фильтр по сроку погашения
+        if (!filterByMaturity(bond, params, showOffer)) {
+            return false;
+        }
+        
+        // Текстовый поиск
+        if (params.getSearchText() != null && !params.getSearchText().trim().isEmpty()) {
+            String searchPattern = params.getSearchText().trim().toLowerCase();
+            boolean matchFound = (bond.getTicker() != null && bond.getTicker().toLowerCase().contains(searchPattern)) ||
+                               (bond.getShortName() != null && bond.getShortName().toLowerCase().contains(searchPattern));
+            if (!matchFound) {
+                return false;
+            }
         }
         
         // Фильтр по рейтингу
@@ -180,6 +181,30 @@ public class BondFilteringService {
             // Третичная сортировка по точной доходности - убывание
             return yield2.compareTo(yield1);
         };
+    }
+    
+    /**
+     * Фильтрует по сроку погашения с учётом оферты
+     */
+    private boolean filterByMaturity(Bond bond, FilterParams params, boolean showOffer) {
+        int minWeeks = params.getMinWeeksToMaturity() != null ? params.getMinWeeksToMaturity() : 0;
+        int maxWeeks = params.getMaxWeeksToMaturity() != null ? params.getMaxWeeksToMaturity() : 520;
+        
+        java.time.LocalDate targetDate;
+        if (showOffer && bond.getOfferDate() != null && bond.getOfferDate().isAfter(java.time.LocalDate.now())) {
+            targetDate = bond.getOfferDate();
+        } else {
+            targetDate = bond.getMaturityDate();
+        }
+        
+        if (targetDate == null) {
+            return false;
+        }
+        
+        java.time.LocalDate now = java.time.LocalDate.now();
+        long weeksUntilTarget = java.time.temporal.ChronoUnit.WEEKS.between(now, targetDate);
+        
+        return weeksUntilTarget >= minWeeks && weeksUntilTarget <= maxWeeks;
     }
 
     /**
