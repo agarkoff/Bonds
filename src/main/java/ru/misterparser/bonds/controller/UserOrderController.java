@@ -69,7 +69,7 @@ public class UserOrderController {
                                         Authentication authentication) {
         try {
             log.info("Получен запрос на обновление сделки {}: purchaseDate={}, price={}, feePercent={}", 
-                id, order.getPurchaseDate(), order.getPrice(), order.getFeePercent());
+                id, order.getPurchaseDate(), order.getPriceAsk(), order.getFeePercent());
             UserOrder updatedOrder = userOrderService.updateOrder(id, order, authentication);
             log.info("Обновлена сделка {} для пользователя", id);
             return ResponseEntity.ok(updatedOrder);

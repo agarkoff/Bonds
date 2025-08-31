@@ -25,7 +25,7 @@ public class UserOrder {
     private BigDecimal couponValue;
     private Integer couponPeriod;
     private LocalDate maturityDate;
-    private BigDecimal price;
+    private BigDecimal priceAsk;
     private BigDecimal nkd;
     private BigDecimal feePercent;
     

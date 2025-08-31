@@ -99,14 +99,14 @@ public class CalculationService {
 
 
     private boolean canCalculate(Bond bond) {
-        return bond.getPrice() != null &&
+        return bond.getPriceAsk() != null &&
                bond.getFaceValue() != null &&
                bond.getCouponValue() != null &&
                bond.getMaturityDate() != null &&
                bond.getCouponLength() != null &&
                bond.getCouponDaysPassed() != null &&
                bond.getMaturityDate().isAfter(LocalDate.now()) &&
-               bond.getPrice().compareTo(BigDecimal.ZERO) > 0;
+               bond.getPriceAsk().compareTo(BigDecimal.ZERO) > 0;
     }
 
     private void calculateBond(Bond bond) {
@@ -124,7 +124,7 @@ public class CalculationService {
         bond.setNkd(nkd);
 
         // 3. Затраты (только цена + НКД, без комиссии)
-        BigDecimal costs = bond.getPrice().add(nkd);
+        BigDecimal costs = bond.getPriceAsk().add(nkd);
         bond.setCosts(costs);
 
         // 5. Купоны до погашения
@@ -184,7 +184,7 @@ public class CalculationService {
         calculatedBond.setNkd(nkd);
 
         // 3. Кастомная комиссия
-        BigDecimal preFeeCosts = calculatedBond.getPrice().add(nkd);
+        BigDecimal preFeeCosts = calculatedBond.getPriceAsk().add(nkd);
         BigDecimal fee = preFeeCosts
                 .multiply(customFeePercent, mathContext)
                 .divide(HUNDRED, mathContext);
@@ -246,7 +246,7 @@ public class CalculationService {
             bond.setCouponOffer(couponOffer);
 
             // 2. Расчёт затрат с двойной комиссией для оферты
-            BigDecimal preFeeCosts = bond.getPrice().add(nkd);
+            BigDecimal preFeeCosts = bond.getPriceAsk().add(nkd);
             BigDecimal doubleFee = preFeeCosts
                     .multiply(customFeePercent.multiply(new BigDecimal("2"), mathContext), mathContext)
                     .divide(HUNDRED, mathContext);

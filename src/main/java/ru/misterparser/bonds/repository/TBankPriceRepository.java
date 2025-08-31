@@ -23,23 +23,26 @@ public class TBankPriceRepository {
         public TBankPrice mapRow(ResultSet rs, int rowNum) throws SQLException {
             TBankPrice price = new TBankPrice();
             price.setFigi(rs.getString("figi"));
-            price.setPrice(rs.getBigDecimal("price"));
+            price.setPriceAsk(rs.getBigDecimal("price_ask"));
+            price.setPriceBid(rs.getBigDecimal("price_bid"));
             return price;
         }
     };
 
     public void saveOrUpdate(TBankPrice price) {
         try {
-            String sql = "INSERT INTO tbank_prices (figi, price) " +
-                    "VALUES (?, ?) " +
+            String sql = "INSERT INTO tbank_prices (figi, price_ask, price_bid) " +
+                    "VALUES (?, ?, ?) " +
                     "ON CONFLICT (figi) " +
                     "DO UPDATE SET " +
-                    "price = EXCLUDED.price, " +
+                    "price_ask = EXCLUDED.price_ask, " +
+                    "price_bid = EXCLUDED.price_bid, " +
                     "updated_at = CURRENT_TIMESTAMP";
             
             jdbcTemplate.update(sql,
                 price.getFigi(),
-                price.getPrice()
+                price.getPriceAsk(),
+                price.getPriceBid()
             );
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to save or update T-Bank price: " + price.getFigi(), e);

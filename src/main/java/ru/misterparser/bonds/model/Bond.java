@@ -29,7 +29,8 @@ public class Bond {
     private String brandName;
     
     // Рыночные данные
-    private BigDecimal price;
+    private BigDecimal priceAsk;
+    private BigDecimal priceBid;
     
     // Рейтинги
     private String ratingValue;

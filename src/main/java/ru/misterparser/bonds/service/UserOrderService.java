@@ -83,8 +83,8 @@ public class UserOrderService {
         if (updateData.getPurchaseDate() != null) {
             existingOrder.setPurchaseDate(updateData.getPurchaseDate());
         }
-        if (updateData.getPrice() != null) {
-            existingOrder.setPrice(updateData.getPrice());
+        if (updateData.getPriceAsk() != null) {
+            existingOrder.setPriceAsk(updateData.getPriceAsk());
         }
         if (updateData.getFeePercent() != null) {
             existingOrder.setFeePercent(updateData.getFeePercent());
@@ -167,8 +167,8 @@ public class UserOrderService {
         }
         
         // Устанавливаем текущую цену если не указана
-        if (order.getPrice() == null && bond.getPrice() != null) {
-            order.setPrice(bond.getPrice());
+        if (order.getPriceAsk() == null && bond.getPriceAsk() != null) {
+            order.setPriceAsk(bond.getPriceAsk());
         }
     }
 
@@ -197,19 +197,19 @@ public class UserOrderService {
      * Рассчитывает все финансовые параметры сделки
      */
     private void calculateOrderFinancials(UserOrder order) {
-        if (order.getPrice() == null || order.getFaceValue() == null) {
+        if (order.getPriceAsk() == null || order.getFaceValue() == null) {
             return;
         }
 
         // Рассчитываем комиссию
         BigDecimal feeAmount = BigDecimal.ZERO;
         if (order.getFeePercent() != null) {
-            feeAmount = order.getPrice().multiply(order.getFeePercent()).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+            feeAmount = order.getPriceAsk().multiply(order.getFeePercent()).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
         }
 
         // Общие затраты = Цена + НКД + Комиссия
         BigDecimal nkd = order.getNkd() != null ? order.getNkd() : BigDecimal.ZERO;
-        order.setTotalCosts(order.getPrice().add(nkd).add(feeAmount));
+        order.setTotalCosts(order.getPriceAsk().add(nkd).add(feeAmount));
 
         // Рассчитываем общий купонный доход до погашения
         calculateTotalCoupon(order);

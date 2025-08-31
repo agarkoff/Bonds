@@ -84,24 +84,23 @@ public class TBankMarketDataService {
                         continue;
                     }
                     
-                    BigDecimal price;
+                    TBankPrice marketPrices;
                     if (isRandomPricesMode()) {
-                        price = generateRandomPrice(bond.getFaceValue());
+                        marketPrices = generateRandomPrices(bond.getFaceValue());
                     } else {
-                        price = getMarketPrice(bond);
+                        marketPrices = getMarketPrices(bond);
                     }
                     
-                    if (price != null) {
-                        TBankPrice tBankPrice = new TBankPrice();
-                        tBankPrice.setFigi(bond.getFigi());
-                        tBankPrice.setPrice(price);
+                    if (marketPrices != null && (marketPrices.getPriceAsk() != null || marketPrices.getPriceBid() != null)) {
+                        marketPrices.setFigi(bond.getFigi());
                         
-                        applicationContext.getBean(TBankMarketDataService.class).saveTBankPrice(tBankPrice);
+                        applicationContext.getBean(TBankMarketDataService.class).saveTBankPrice(marketPrices);
                         updated++;
-                        log.debug("Updated price for FIGI {}: {}", bond.getFigi(), price);
+                        log.debug("Updated prices for FIGI {}: ask={}, bid={}", bond.getFigi(), 
+                                marketPrices.getPriceAsk(), marketPrices.getPriceBid());
                     } else {
                         skipped++;
-                        log.debug("No market price available for FIGI {}", bond.getFigi());
+                        log.debug("No market prices available for FIGI {}", bond.getFigi());
                     }
                 } catch (Exception e) {
                     errors++;
@@ -154,20 +153,37 @@ public class TBankMarketDataService {
         return false;
     }
     
-    private BigDecimal generateRandomPrice(BigDecimal faceValue) {
-        // Генерируем случайную цену в диапазоне от 80% до 120% от номинала
-        double randomPercent = 80.0 + (120.0 - 80.0) * random.nextDouble();
-        BigDecimal price = faceValue.multiply(BigDecimal.valueOf(randomPercent))
+    private TBankPrice generateRandomPrices(BigDecimal faceValue) {
+        // Генерируем случайную базовую цену в диапазоне от 80% до 120% от номинала
+        double basePercent = 80.0 + (120.0 - 80.0) * random.nextDouble();
+        BigDecimal basePrice = faceValue.multiply(BigDecimal.valueOf(basePercent))
                 .divide(BigDecimal.valueOf(100), 8, RoundingMode.HALF_UP);
         
-        log.debug("Generated random price for face_value {}: {} ({}%)", 
-                faceValue, price, String.format("%.2f", randomPercent));
+        // Генерируем спред (разницу между bid и ask) в диапазоне 0.1% - 1% от базовой цены
+        double spreadPercent = 0.1 + (1.0 - 0.1) * random.nextDouble();
+        BigDecimal spread = basePrice.multiply(BigDecimal.valueOf(spreadPercent))
+                .divide(BigDecimal.valueOf(100), 8, RoundingMode.HALF_UP);
         
-        return price;
+        // Ask (цена продажи) = базовая цена + половина спреда
+        // Bid (цена покупки) = базовая цена - половина спреда
+        BigDecimal halfSpread = spread.divide(BigDecimal.valueOf(2), 8, RoundingMode.HALF_UP);
+        BigDecimal priceAsk = basePrice.add(halfSpread);
+        BigDecimal priceBid = basePrice.subtract(halfSpread);
+        
+        TBankPrice prices = new TBankPrice();
+        prices.setPriceAsk(priceAsk);
+        prices.setPriceBid(priceBid);
+        
+        log.debug("Generated random prices for face_value {}: ask={} ({}%), bid={} ({}%), spread={}%", 
+                faceValue, priceAsk, String.format("%.2f", priceAsk.multiply(BigDecimal.valueOf(100)).divide(faceValue, 2, RoundingMode.HALF_UP)),
+                priceBid, String.format("%.2f", priceBid.multiply(BigDecimal.valueOf(100)).divide(faceValue, 2, RoundingMode.HALF_UP)),
+                String.format("%.2f", spreadPercent));
+        
+        return prices;
     }
 
 
-    private BigDecimal getMarketPrice(TBankBondWithFaceValue bond) throws Exception {
+    private TBankPrice getMarketPrices(TBankBondWithFaceValue bond) throws Exception {
         rateLimitService.waitForRateLimit();
 
         String url = tBankConfig.getApiUrl() + "/tinkoff.public.invest.api.contract.v1.MarketDataService/GetOrderBook";
@@ -183,35 +199,52 @@ public class TBankMarketDataService {
 
         if (response.getStatusCode() == HttpStatus.OK) {
             JsonNode rootNode = objectMapper.readTree(response.getBody());
+            
+            TBankPrice prices = new TBankPrice();
+            
+            // Получаем лучшую цену ask (цена продажи/покупки для инвестора)
             JsonNode asksNode = rootNode.path("asks");
-
             if (asksNode.isArray() && asksNode.size() > 0) {
-                JsonNode firstAsk = asksNode.get(0);
-                JsonNode priceNode = firstAsk.path("price");
-
-                String units = priceNode.path("units").asText();
-                String nano = priceNode.path("nano").asText();
-
-                if (!units.isEmpty() && !nano.isEmpty()) {
-                    // T-Bank возвращает цену в процентах от номинала
-                    BigDecimal pricePercent = new BigDecimal(units);
-                    BigDecimal nanoDecimal = new BigDecimal(nano).divide(BigDecimal.valueOf(1_000_000_000));
-                    BigDecimal totalPercent = pricePercent.add(nanoDecimal);
-                    
-                    // Конвертируем проценты в абсолютную цену
-                    BigDecimal faceValue = bond.getFaceValue();
-                    
-                    BigDecimal absolutePrice = totalPercent.multiply(faceValue).divide(BigDecimal.valueOf(100));
-                    
-                    return absolutePrice;
-                }
+                BigDecimal askPrice = extractPrice(asksNode.get(0).path("price"), bond.getFaceValue());
+                prices.setPriceAsk(askPrice);
+                log.debug("Extracted ask price for FIGI {}: {}", bond.getFigi(), askPrice);
+            }
+            
+            // Получаем лучшую цену bid (цена покупки/продажи для инвестора)
+            JsonNode bidsNode = rootNode.path("bids");
+            if (bidsNode.isArray() && bidsNode.size() > 0) {
+                BigDecimal bidPrice = extractPrice(bidsNode.get(0).path("price"), bond.getFaceValue());
+                prices.setPriceBid(bidPrice);
+                log.debug("Extracted bid price for FIGI {}: {}", bond.getFigi(), bidPrice);
+            }
+            
+            // Возвращаем цены только если хотя бы одна из них доступна
+            if (prices.getPriceAsk() != null || prices.getPriceBid() != null) {
+                return prices;
             } else {
-                log.info("Стакан для покупки пуст для ticker: {}", bond.getTicker());
+                log.info("Стакан пуст для ticker: {}", bond.getTicker());
             }
         } else {
             log.info("Неожиданный код ответа от T-Bank: {}", response.getStatusCode());
         }
 
+        return null;
+    }
+    
+    private BigDecimal extractPrice(JsonNode priceNode, BigDecimal faceValue) {
+        String units = priceNode.path("units").asText();
+        String nano = priceNode.path("nano").asText();
+
+        if (!units.isEmpty() && !nano.isEmpty()) {
+            // T-Bank возвращает цену в процентах от номинала
+            BigDecimal pricePercent = new BigDecimal(units);
+            BigDecimal nanoDecimal = new BigDecimal(nano).divide(BigDecimal.valueOf(1_000_000_000), 8, RoundingMode.HALF_UP);
+            BigDecimal totalPercent = pricePercent.add(nanoDecimal);
+            
+            // Конвертируем проценты в абсолютную цену
+            return totalPercent.multiply(faceValue).divide(BigDecimal.valueOf(100), 8, RoundingMode.HALF_UP);
+        }
+        
         return null;
     }
 

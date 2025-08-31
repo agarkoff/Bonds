@@ -426,8 +426,8 @@
                         <td th:text="${order.rating}">AAA</td>
                         <td class="currency" th:text="${#numbers.formatDecimal(order.couponValue, 0, 2)}">25.00</td>
                         <td th:text="${order.couponPeriod} + ' дн.'">91 дн.</td>
-                        <td class="currency editable-cell costs-group" th:onclick="'editOrderField(' + ${order.id} + ', \'price\')'"
-                            th:text="${#numbers.formatDecimal(order.price, 0, 2)}">1000.00</td>
+                        <td class="currency editable-cell costs-group" th:onclick="'editOrderField(' + ${order.id} + ', \'priceAsk\')'"
+                            th:text="${#numbers.formatDecimal(order.priceAsk, 0, 2)}">1000.00</td>
                         <td class="currency" th:text="${#numbers.formatDecimal(order.nkd, 0, 2)}">15.50</td>
                         <td class="percentage editable-cell" th:onclick="'editOrderField(' + ${order.id} + ', \'feePercent\')'"
                             th:text="${#numbers.formatDecimal(order.feePercent, 0, 2)}">0.30</td>
@@ -567,8 +567,8 @@
             document.getElementById('newFaceValue').textContent = bond.faceValue ? formatCurrency(bond.faceValue) : '-';
             document.getElementById('newNkd').textContent = bond.nkd ? formatCurrency(bond.nkd) : '-';
             
-            if (bond.price) {
-                document.getElementById('newPrice').value = bond.price;
+            if (bond.priceAsk) {
+                document.getElementById('newPrice').value = bond.priceAsk;
             }
 
             document.getElementById('isinDropdown').style.display = 'none';
@@ -593,7 +593,7 @@
             const orderData = {
                 purchaseDate: document.getElementById('newPurchaseDate').value,
                 isin: document.getElementById('newIsin').value,
-                price: parseFloat(document.getElementById('newPrice').value),
+                priceAsk: parseFloat(document.getElementById('newPrice').value),
                 feePercent: parseFloat(document.getElementById('newFeePercent').value)
             };
 
@@ -700,7 +700,7 @@
                         currentValue = '';
                     }
                     break;
-                case 'price':
+                case 'priceAsk':
                     cellIndex = 6;
                     // Извлекаем только цифры и точку/запятую
                     const priceText = row.cells[cellIndex].textContent.replace(/[^\d.,]/g, '').replace(',', '.');
@@ -751,7 +751,7 @@
             if (fieldName === 'purchaseDate') {
                 console.log('Обработка даты:', newValue);
                 updateData.purchaseDate = newValue;
-            } else if (fieldName === 'price') {
+            } else if (fieldName === 'priceAsk') {
                 console.log('Обработка цены:', newValue);
                 const priceValue = parseFloat(newValue);
                 console.log('Парсинг цены:', priceValue);
@@ -760,7 +760,7 @@
                     cancelOrderFieldEdit(orderId, fieldName, originalContent);
                     return;
                 }
-                updateData.price = priceValue;
+                updateData.priceAsk = priceValue;
             } else if (fieldName === 'feePercent') {
                 console.log('Обработка комиссии:', newValue);
                 const feeValue = parseFloat(newValue);
@@ -807,7 +807,7 @@
                 case 'purchaseDate':
                     cellIndex = 0;
                     break;
-                case 'price':
+                case 'priceAsk':
                     cellIndex = 6;
                     break;
                 case 'feePercent':

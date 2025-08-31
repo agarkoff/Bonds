@@ -83,7 +83,7 @@ public class TBankBondRepository {
             String sql = "SELECT tb.instrument_uid, tb.figi, tb.ticker, tb.asset_uid, tb.brand_name, " +
                     "mb.face_value " +
                     "FROM tbank_bonds tb " +
-                    "LEFT JOIN moex_bonds mb ON tb.ticker = mb.isin " +
+                    "LEFT JOIN moex_bonds mb ON tb.ticker = mb.isin WHERE mb.face_value IS NOT NULL " +
                     "ORDER BY tb.ticker";
             
             return jdbcTemplate.query(sql, (rs, rowNum) -> {

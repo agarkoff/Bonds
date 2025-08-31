@@ -7,5 +7,6 @@ import java.math.BigDecimal;
 @Data
 public class TBankPrice {
     private String figi;
-    private BigDecimal price;
+    private BigDecimal priceAsk;
+    private BigDecimal priceBid;
 }

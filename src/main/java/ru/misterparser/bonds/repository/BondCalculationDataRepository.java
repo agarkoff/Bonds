@@ -41,7 +41,8 @@ public class BondCalculationDataRepository {
             bond.setBrandName(rs.getString("brand_name"));
             
             // Цена из tbank_prices
-            bond.setPrice(rs.getBigDecimal("price"));
+            bond.setPriceAsk(rs.getBigDecimal("price_ask"));
+            bond.setPriceBid(rs.getBigDecimal("price_bid"));
             
             // Рейтинг из dohod_ratings
             bond.setRatingValue(rs.getString("rating_value"));
@@ -73,7 +74,8 @@ public class BondCalculationDataRepository {
                 "tb.instrument_uid, " +
                 "tb.asset_uid, " +
                 "tb.brand_name, " +
-                "tp.price, " +
+                "tp.price_ask, " +
+                "tp.price_bid, " +
                 "dr.rating_value, " +
                 "dr.rating_code " +
                 "FROM moex_bonds mb " +
@@ -108,7 +110,7 @@ public class BondCalculationDataRepository {
                 "tb.instrument_uid, " +
                 "tb.asset_uid, " +
                 "tb.brand_name, " +
-                "tp.price, " +
+                "tp.price_ask, " +
                 "dr.rating_value, " +
                 "dr.rating_code " +
                 "FROM moex_bonds mb " +

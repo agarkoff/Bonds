@@ -36,7 +36,8 @@ public class BondRepository {
             bond.setInstrumentUid(rs.getString("instrument_uid"));
             bond.setAssetUid(rs.getString("asset_uid"));
             bond.setBrandName(rs.getString("brand_name"));
-            bond.setPrice(rs.getBigDecimal("price"));
+            bond.setPriceAsk(rs.getBigDecimal("price_ask"));
+            bond.setPriceBid(rs.getBigDecimal("price_bid"));
             bond.setRatingValue(rs.getString("rating_value"));
             Integer ratingCode = rs.getObject("rating_code", Integer.class);
             bond.setRatingCode(ratingCode);
