@@ -163,14 +163,6 @@ public class RatingSubscriptionRepository {
     }
 
     /**
-     * Находит все активные подписки
-     */
-    public List<RatingSubscription> findAllEnabled() {
-        String sql = "SELECT * FROM rating_subscription WHERE enabled = true ORDER BY telegram_user_id, id";
-        return jdbcTemplate.query(sql, subscriptionRowMapper);
-    }
-
-    /**
      * Находит подписки, которые должны быть отправлены
      */
     public List<RatingSubscription> findSubscriptionsToSend() {
@@ -211,23 +203,6 @@ public class RatingSubscriptionRepository {
         String sql = "DELETE FROM rating_subscription WHERE id = ?";
         int affected = jdbcTemplate.update(sql, id);
         return affected > 0;
-    }
-
-    /**
-     * Удаляет все подписки пользователя
-     */
-    public int deleteByTelegramUserId(Long telegramUserId) {
-        String sql = "DELETE FROM rating_subscription WHERE telegram_user_id = ?";
-        return jdbcTemplate.update(sql, telegramUserId);
-    }
-
-    /**
-     * Подсчитывает количество подписок пользователя
-     */
-    public int countByTelegramUserId(Long telegramUserId) {
-        String sql = "SELECT COUNT(*) FROM rating_subscription WHERE telegram_user_id = ?";
-        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, telegramUserId);
-        return count != null ? count : 0;
     }
 
     /**

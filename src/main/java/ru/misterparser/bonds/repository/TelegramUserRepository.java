@@ -46,19 +46,9 @@ public class TelegramUserRepository {
         return users.isEmpty() ? Optional.empty() : Optional.of(users.get(0));
     }
     
-    public Optional<TelegramUser> findByUsername(String username) {
-        List<TelegramUser> users = jdbcTemplate.query("SELECT * FROM telegram_users WHERE username = ?", telegramUserRowMapper, username);
-        return users.isEmpty() ? Optional.empty() : Optional.of(users.get(0));
-    }
-    
     public Optional<TelegramUser> findById(Long id) {
         List<TelegramUser> users = jdbcTemplate.query("SELECT * FROM telegram_users WHERE id = ?", telegramUserRowMapper, id);
         return users.isEmpty() ? Optional.empty() : Optional.of(users.get(0));
-    }
-    
-    public boolean existsByTelegramId(Long telegramId) {
-        Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM telegram_users WHERE telegram_id = ?", Integer.class, telegramId);
-        return count != null && count > 0;
     }
     
     public TelegramUser save(TelegramUser user) {

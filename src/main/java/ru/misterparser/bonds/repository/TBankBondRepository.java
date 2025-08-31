@@ -66,30 +66,12 @@ public class TBankBondRepository {
         }
     }
 
-    public Optional<TBankBond> findByFigi(String figi) {
-        try {
-            String sql = "SELECT * FROM tbank_bonds WHERE figi = ?";
-            List<TBankBond> bonds = jdbcTemplate.query(sql, rowMapper, figi);
-            return bonds.isEmpty() ? Optional.empty() : Optional.of(bonds.get(0));
-        } catch (DataAccessException e) {
-            return Optional.empty();
-        }
-    }
-
     public List<TBankBond> findAll() {
         try {
             String sql = "SELECT * FROM tbank_bonds ORDER BY ticker";
             return jdbcTemplate.query(sql, rowMapper);
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to load T-Bank bonds", e);
-        }
-    }
-
-    public void deleteAll() {
-        try {
-            jdbcTemplate.update("DELETE FROM tbank_bonds");
-        } catch (DataAccessException e) {
-            throw new RuntimeException("Failed to delete T-Bank bonds", e);
         }
     }
 

@@ -151,14 +151,6 @@ public class MoexBondRepository {
     }
 
     /**
-     * Удаляет все облигации (для полной перезагрузки данных)
-     */
-    public int deleteAll() {
-        String sql = "DELETE FROM moex_bonds";
-        return jdbcTemplate.update(sql);
-    }
-
-    /**
      * Удаляет облигацию по ISIN
      */
     public boolean deleteByIsin(String isin) {

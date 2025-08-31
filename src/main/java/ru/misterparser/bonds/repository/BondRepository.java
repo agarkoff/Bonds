@@ -62,17 +62,6 @@ public class BondRepository {
         }
     };
 
-    public List<Bond> findAll() {
-        return jdbcTemplate.query("SELECT * FROM bonds WHERE annual_yield IS NULL OR annual_yield <= 50 ORDER BY annual_yield DESC", bondRowMapper);
-    }
-
-    public List<Bond> findTopByAnnualYield(int limit) {
-        return jdbcTemplate.query("SELECT * FROM bonds WHERE annual_yield IS NOT NULL AND annual_yield <= 50 ORDER BY FLOOR(annual_yield) DESC, rating_code ASC, annual_yield DESC LIMIT ?",
-                bondRowMapper, limit);
-    }
-
-
-
     /**
      * Получает все облигации с базовыми ограничениями для дальнейшей фильтрации в бэкенде
      */
@@ -88,31 +77,10 @@ public class BondRepository {
         return bonds.isEmpty() ? Optional.empty() : Optional.of(bonds.get(0));
     }
 
-    public List<Bond> findAllWithFigi() {
-        return jdbcTemplate.query("SELECT * FROM bonds WHERE figi IS NOT NULL", bondRowMapper);
-    }
-
-    // Методы записи удалены - используется представление только для чтения
-    // Для записи данных используются соответствующие репозитории:
-    // - MoexBondRepository для данных MOEX
-    // - TBankBondRepository для данных T-Bank
-    // - TBankPriceRepository для цен
-    // - DohodRatingRepository для рейтингов
-    // - BondCalculationRepository для расчетных данных (таблица bonds_calc)
-
     public long count() {
         return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM bonds", Long.class);
     }
 
-    public List<Bond> findBondsWithOffersInDays(int days) {
-        String sql = "SELECT * FROM bonds " +
-                    "WHERE offer_date IS NOT NULL " +
-                    "AND offer_date > CURRENT_DATE " +
-                    "AND offer_date <= CURRENT_DATE + INTERVAL '" + days + " days' " +
-                    "ORDER BY offer_date ASC";
-        return jdbcTemplate.query(sql, bondRowMapper);
-    }
-    
     public List<String> findDistinctRatingValues() {
         return jdbcTemplate.query(
             "SELECT DISTINCT rating_value, rating_code FROM bonds WHERE rating_value IS NOT NULL ORDER BY rating_code ASC, rating_value ASC",

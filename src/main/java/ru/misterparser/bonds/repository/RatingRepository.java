@@ -36,11 +36,6 @@ public class RatingRepository {
         return jdbcTemplate.query("SELECT * FROM ratings ORDER BY rating_date DESC", ratingRowMapper);
     }
 
-    public List<Rating> findByIsin(String isin) {
-        return jdbcTemplate.query("SELECT * FROM ratings WHERE isin = ? ORDER BY rating_date DESC", 
-                ratingRowMapper, isin);
-    }
-
     public void save(Rating rating) {
         String sql = "INSERT INTO ratings (isin, company_name, rating_value, rating_code, rating_date) " +
                 "VALUES (?, ?, ?, ?, ?) ON CONFLICT (isin, rating_date) DO UPDATE SET " +
@@ -54,16 +49,5 @@ public class RatingRepository {
                 rating.getRatingCode(),
                 rating.getRatingDate()
         );
-    }
-
-    public boolean existsByIsinAndDate(String isin, java.time.LocalDate date) {
-        Long count = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM ratings WHERE isin = ? AND rating_date = ?",
-                Long.class, isin, date);
-        return count != null && count > 0;
-    }
-
-    public void deleteAll() {
-        jdbcTemplate.update("DELETE FROM ratings");
     }
 }

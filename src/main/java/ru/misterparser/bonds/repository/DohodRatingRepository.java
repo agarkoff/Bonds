@@ -52,30 +52,12 @@ public class DohodRatingRepository {
         }
     }
 
-    public Optional<DohodRating> findByIsin(String isin) {
-        try {
-            String sql = "SELECT * FROM dohod_ratings WHERE isin = ?";
-            List<DohodRating> ratings = jdbcTemplate.query(sql, rowMapper, isin);
-            return ratings.isEmpty() ? Optional.empty() : Optional.of(ratings.get(0));
-        } catch (DataAccessException e) {
-            return Optional.empty();
-        }
-    }
-
     public List<DohodRating> findAll() {
         try {
             String sql = "SELECT * FROM dohod_ratings ORDER BY isin";
             return jdbcTemplate.query(sql, rowMapper);
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to load Dohod ratings", e);
-        }
-    }
-
-    public void deleteAll() {
-        try {
-            jdbcTemplate.update("DELETE FROM dohod_ratings");
-        } catch (DataAccessException e) {
-            throw new RuntimeException("Failed to delete Dohod ratings", e);
         }
     }
 }

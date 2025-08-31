@@ -46,30 +46,12 @@ public class TBankPriceRepository {
         }
     }
 
-    public Optional<TBankPrice> findByFigi(String figi) {
-        try {
-            String sql = "SELECT * FROM tbank_prices WHERE figi = ?";
-            List<TBankPrice> prices = jdbcTemplate.query(sql, rowMapper, figi);
-            return prices.isEmpty() ? Optional.empty() : Optional.of(prices.get(0));
-        } catch (DataAccessException e) {
-            return Optional.empty();
-        }
-    }
-
     public List<TBankPrice> findAll() {
         try {
             String sql = "SELECT * FROM tbank_prices ORDER BY figi";
             return jdbcTemplate.query(sql, rowMapper);
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to load T-Bank prices", e);
-        }
-    }
-
-    public void deleteAll() {
-        try {
-            jdbcTemplate.update("DELETE FROM tbank_prices");
-        } catch (DataAccessException e) {
-            throw new RuntimeException("Failed to delete T-Bank prices", e);
         }
     }
 }

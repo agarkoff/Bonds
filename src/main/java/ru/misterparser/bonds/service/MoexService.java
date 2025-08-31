@@ -5,6 +5,9 @@ import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import com.opencsv.exceptions.CsvException;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
@@ -213,16 +216,12 @@ public class MoexService {
     /**
      * Класс для результата валидации
      */
+    @AllArgsConstructor
+    @Getter
     private static class ValidationResult {
         private final boolean valid;
         private final String reason;
         private final String isin;
-        
-        private ValidationResult(boolean valid, String reason, String isin) {
-            this.valid = valid;
-            this.reason = reason;
-            this.isin = isin;
-        }
         
         public static ValidationResult valid() {
             return new ValidationResult(true, null, null);
@@ -235,10 +234,6 @@ public class MoexService {
         public static ValidationResult invalid(String reason, String isin) {
             return new ValidationResult(false, reason, isin);
         }
-        
-        public boolean isValid() { return valid; }
-        public String getReason() { return reason; }
-        public String getIsin() { return isin; }
     }
 
     private MoexBond parseRow(String[] row, Map<String, Integer> columnIndexes) {

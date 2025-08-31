@@ -44,26 +44,4 @@ public class TelegramUserDetailsService implements UserDetailsService {
             throw new UsernameNotFoundException("Неверный формат Telegram ID в username: " + username);
         }
     }
-    
-    /**
-     * Создает username для Telegram пользователя
-     */
-    public String createUsernameForTelegramUser(Long telegramId) {
-        return "telegram_" + telegramId;
-    }
-    
-    /**
-     * Извлекает Telegram ID из username
-     */
-    public Long extractTelegramId(String username) {
-        if (!username.startsWith("telegram_")) {
-            return null;
-        }
-        
-        try {
-            return Long.parseLong(username.substring("telegram_".length()));
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
 }

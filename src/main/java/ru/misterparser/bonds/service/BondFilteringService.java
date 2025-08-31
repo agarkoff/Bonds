@@ -1,5 +1,8 @@
 package ru.misterparser.bonds.service;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.misterparser.bonds.model.Bond;
@@ -20,6 +23,7 @@ public class BondFilteringService {
     /**
      * Параметры для фильтрации и сортировки облигаций
      */
+    @Data
     public static class FilterParams {
         private Integer minWeeksToMaturity;
         private Integer maxWeeksToMaturity;
@@ -30,50 +34,6 @@ public class BondFilteringService {
         private BigDecimal customFeePercent;
         private Integer limit;
         private List<String> selectedRatings;
-
-        // Конструкторы
-        public FilterParams() {}
-
-        public FilterParams(Integer minWeeksToMaturity, Integer maxWeeksToMaturity, 
-                          BigDecimal minYield, BigDecimal maxYield, Boolean includeOffer, 
-                          String searchText, BigDecimal customFeePercent, Integer limit) {
-            this.minWeeksToMaturity = minWeeksToMaturity;
-            this.maxWeeksToMaturity = maxWeeksToMaturity;
-            this.minYield = minYield;
-            this.maxYield = maxYield;
-            this.includeOffer = includeOffer;
-            this.searchText = searchText;
-            this.customFeePercent = customFeePercent;
-            this.limit = limit;
-        }
-
-        // Getters and setters
-        public Integer getMinWeeksToMaturity() { return minWeeksToMaturity; }
-        public void setMinWeeksToMaturity(Integer minWeeksToMaturity) { this.minWeeksToMaturity = minWeeksToMaturity; }
-        
-        public Integer getMaxWeeksToMaturity() { return maxWeeksToMaturity; }
-        public void setMaxWeeksToMaturity(Integer maxWeeksToMaturity) { this.maxWeeksToMaturity = maxWeeksToMaturity; }
-        
-        public BigDecimal getMinYield() { return minYield; }
-        public void setMinYield(BigDecimal minYield) { this.minYield = minYield; }
-        
-        public BigDecimal getMaxYield() { return maxYield; }
-        public void setMaxYield(BigDecimal maxYield) { this.maxYield = maxYield; }
-        
-        public Boolean getIncludeOffer() { return includeOffer; }
-        public void setIncludeOffer(Boolean includeOffer) { this.includeOffer = includeOffer; }
-        
-        public String getSearchText() { return searchText; }
-        public void setSearchText(String searchText) { this.searchText = searchText; }
-        
-        public BigDecimal getCustomFeePercent() { return customFeePercent; }
-        public void setCustomFeePercent(BigDecimal customFeePercent) { this.customFeePercent = customFeePercent; }
-        
-        public Integer getLimit() { return limit; }
-        public void setLimit(Integer limit) { this.limit = limit; }
-        
-        public List<String> getSelectedRatings() { return selectedRatings; }
-        public void setSelectedRatings(List<String> selectedRatings) { this.selectedRatings = selectedRatings; }
     }
 
     /**

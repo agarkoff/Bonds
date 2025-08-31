@@ -58,25 +58,6 @@ public class RaExpertRatingRepository {
         }
     }
 
-    public Optional<RaExpertRating> findByIsinAndDate(String isin, LocalDate ratingDate) {
-        try {
-            String sql = "SELECT * FROM raexpert_ratings WHERE isin = ? AND rating_date = ?";
-            List<RaExpertRating> ratings = jdbcTemplate.query(sql, rowMapper, isin, ratingDate);
-            return ratings.isEmpty() ? Optional.empty() : Optional.of(ratings.get(0));
-        } catch (DataAccessException e) {
-            return Optional.empty();
-        }
-    }
-
-    public List<RaExpertRating> findByIsin(String isin) {
-        try {
-            String sql = "SELECT * FROM raexpert_ratings WHERE isin = ? ORDER BY rating_date DESC";
-            return jdbcTemplate.query(sql, rowMapper, isin);
-        } catch (DataAccessException e) {
-            throw new RuntimeException("Failed to load RaExpert ratings for ISIN: " + isin, e);
-        }
-    }
-
     public List<RaExpertRating> findAll() {
         try {
             String sql = "SELECT * FROM raexpert_ratings ORDER BY rating_date DESC, isin";
@@ -86,11 +67,4 @@ public class RaExpertRatingRepository {
         }
     }
 
-    public void deleteAll() {
-        try {
-            jdbcTemplate.update("DELETE FROM raexpert_ratings");
-        } catch (DataAccessException e) {
-            throw new RuntimeException("Failed to delete RaExpert ratings", e);
-        }
-    }
 }

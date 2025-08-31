@@ -33,16 +33,6 @@ public class OfferSubscriptionRepository {
     };
 
     /**
-     * Добавляет подписку на ISIN для пользователя
-     */
-    public void addSubscription(Long chatId, String username, String isin) {
-        String sql = "INSERT INTO offer_subscription (chat_id, username, isin) VALUES (?, ?, ?) " +
-                    "ON CONFLICT (chat_id, isin) DO UPDATE SET " +
-                    "username = EXCLUDED.username, updated_at = CURRENT_TIMESTAMP";
-        jdbcTemplate.update(sql, chatId, username, isin);
-    }
-    
-    /**
      * Добавляет подписку на ISIN для пользователя с telegram_user_id
      */
     public void addSubscription(Long chatId, String username, String isin, Long telegramUserId) {
@@ -70,14 +60,6 @@ public class OfferSubscriptionRepository {
     }
 
     /**
-     * Получает всех пользователей, подписанных на конкретный ISIN
-     */
-    public List<OfferSubscription> findByIsin(String isin) {
-        String sql = "SELECT * FROM offer_subscription WHERE isin = ?";
-        return jdbcTemplate.query(sql, subscriptionRowMapper, isin);
-    }
-
-    /**
      * Находит подписку по ID
      */
     public Optional<OfferSubscription> findById(Long id) {
@@ -97,14 +79,6 @@ public class OfferSubscriptionRepository {
         String sql = "SELECT COUNT(*) FROM offer_subscription WHERE chat_id = ? AND isin = ?";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, chatId, isin);
         return count != null && count > 0;
-    }
-
-    /**
-     * Получает все уникальные chat_id пользователей
-     */
-    public List<Long> findAllChatIds() {
-        String sql = "SELECT DISTINCT chat_id FROM offer_subscription ORDER BY chat_id";
-        return jdbcTemplate.queryForList(sql, Long.class);
     }
 
     /**
