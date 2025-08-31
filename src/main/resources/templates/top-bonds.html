@@ -291,12 +291,13 @@
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div style="flex: 1;"></div>
                 <h1 style="flex: 2; text-align: center; margin: 0;">🏆 Топ облигаций по доходности</h1>
-                <div style="flex: 1; text-align: right;">
+                <div style="text-align: right;">
                     <div sec:authorize="!isAuthenticated()" style="font-size: 14px;">
                         <a th:href="@{/telegram-login}">📱 Войти через Telegram</a>
                     </div>
                     <div sec:authorize="isAuthenticated()" style="font-size: 14px;">
                         <button onclick="createSubscription()" style="margin-right: 10px;">🔔 Подписаться</button>
+                        <a th:href="@{/orders}" style="margin-right: 10px;">📊 Мои сделки</a>
                         <a th:href="@{/user/profile}" style="margin-right: 10px;">👤 <span th:text="${@securityUtils.getCurrentUserDisplayName()}">Профиль</span></a>
                         <form th:action="@{/logout}" method="post" style="display: inline;">
                             <button type="submit">🚪 Выход</button>

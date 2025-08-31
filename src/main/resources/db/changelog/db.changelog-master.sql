@@ -359,3 +359,42 @@ CREATE TABLE user_filter_settings (
 );
 
 CREATE INDEX idx_user_filter_settings_user_id ON user_filter_settings(user_id);
+
+--changeset bonds:25
+CREATE TABLE user_orders (
+    id SERIAL PRIMARY KEY,
+    telegram_user_id BIGINT NOT NULL,
+    
+    -- Основные поля сделки
+    purchase_date DATE NOT NULL,
+    isin VARCHAR(12) NOT NULL,
+    ticker VARCHAR(20),
+    bond_name VARCHAR(255),
+    rating VARCHAR(10),
+    coupon_value DECIMAL(10,2),
+    coupon_period INTEGER,
+    maturity_date DATE,
+    price DECIMAL(10,2) NOT NULL,
+    nkd DECIMAL(10,2),
+    fee_percent DECIMAL(5,2),
+    
+    -- Расчетные поля
+    total_costs DECIMAL(12,2),
+    face_value DECIMAL(10,2),
+    total_coupon DECIMAL(12,2),
+    total_income DECIMAL(12,2),
+    net_profit DECIMAL(12,2),
+    annual_yield DECIMAL(8,2),
+    
+    -- Служебные поля
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Индексы и ограничения
+    FOREIGN KEY (telegram_user_id) REFERENCES telegram_users(id) ON DELETE CASCADE
+);
+
+-- Индексы для оптимизации запросов
+CREATE INDEX idx_user_orders_telegram_user_id ON user_orders(telegram_user_id);
+CREATE INDEX idx_user_orders_purchase_date ON user_orders(purchase_date);
+CREATE INDEX idx_user_orders_isin ON user_orders(isin);
