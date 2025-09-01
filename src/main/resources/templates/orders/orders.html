@@ -474,7 +474,6 @@
                             th:style="'background-color: ' + ${@yieldColorService.getYieldColor(order.annualYield)}"
                             th:text="${#numbers.formatDecimal(order.annualYield, 0, 2)}">18.50</td>
                         <td>
-                            <button th:onclick="'editOrder(' + ${order.id} + ')'" class="btn btn-primary btn-small">✏️</button>
                             <button th:onclick="'deleteOrder(' + ${order.id} + ')'" class="btn btn-danger btn-small">🗑️</button>
                         </td>
                     </tr>
@@ -945,10 +944,6 @@
             }
         }
 
-        // Редактирование всей сделки (пока просто alert)
-        function editOrder(orderId) {
-            alert('Полное редактирование сделки будет добавлено в следующей версии. Сейчас доступно редактирование отдельных полей по клику.');
-        }
     </script>
 </body>
 </html>
