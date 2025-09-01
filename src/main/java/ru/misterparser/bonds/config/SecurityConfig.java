@@ -67,7 +67,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         http
             .authorizeRequests(authorize -> authorize
                 .antMatchers("/", "/login", "/register", "/telegram-login", "/auth/telegram/**", "/debug/**", "/proxy/**", "/css/**", "/js/**", "/images/**").permitAll()
-                .antMatchers("/api/**").access(isTestProfile ? "permitAll" : "authenticated")
+                .antMatchers("/api/**").access("authenticated")
+                .antMatchers("/admin/api/**").access(isTestProfile ? "permitAll" : "authenticated")
                 .anyRequest().authenticated()
             )
             .formLogin().disable()
