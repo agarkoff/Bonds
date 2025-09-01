@@ -205,6 +205,27 @@
             font-size: inherit;
         }
         
+        .edit-input select {
+            cursor: pointer;
+        }
+        
+        .edit-input select[size] {
+            border: 1px solid #007bff;
+            border-radius: 3px;
+            padding: 0;
+            margin: 0;
+            background: white;
+        }
+        
+        .edit-input select[size] option {
+            padding: 4px 8px;
+            cursor: pointer;
+        }
+        
+        .edit-input select[size] option:hover {
+            background-color: #e3f2fd;
+        }
+        
         .autocomplete {
             position: relative;
         }
@@ -325,7 +346,7 @@
                 <table class="orders-table">
                     <thead>
                         <tr>
-                            <th class="group-header" colspan="6">Основная информация</th>
+                            <th class="group-header" colspan="7">Основная информация</th>
                             <th class="group-header costs-group" colspan="4">💰 Затраты</th>
                             <th class="group-header income-group" colspan="3">📈 Доходы</th>
                             <th class="group-header results-group" colspan="2">Результаты</th>
@@ -338,6 +359,7 @@
                             <th>Рейтинг</th>
                             <th>Размер купона</th>
                             <th>Период</th>
+                            <th>Погашение /<br>оферта</th>
                             <th class="costs-group">Цена</th>
                             <th>НКД</th>
                             <th>Комиссия %</th>
@@ -363,6 +385,12 @@
                             <td id="newRating">-</td>
                             <td id="newCouponValue">-</td>
                             <td id="newCouponPeriod">-</td>
+                            <td>
+                                <select id="newUseOfferDate" class="edit-input">
+                                    <option value="false">К погашению</option>
+                                    <option value="true">К оферте</option>
+                                </select>
+                            </td>
                             <td><input type="number" id="newPrice" class="edit-input" step="0.01" /></td>
                             <td id="newNkd">-</td>
                             <td><input type="number" id="newFeePercent" class="edit-input" step="0.01" value="0.3" /></td>
@@ -392,7 +420,7 @@
             <table class="orders-table">
                 <thead>
                     <tr>
-                        <th class="group-header" colspan="6">Основная информация</th>
+                        <th class="group-header" colspan="7">Основная информация</th>
                         <th class="group-header costs-group" colspan="4">💰 Затраты</th>
                         <th class="group-header income-group" colspan="3">📈 Доходы</th>
                         <th class="group-header results-group" colspan="2">Результаты</th>
@@ -405,6 +433,7 @@
                         <th>Рейтинг</th>
                         <th>Размер купона</th>
                         <th>Период</th>
+                        <th>Погашение /<br>оферта</th>
                         <th class="costs-group">Цена</th>
                         <th>НКД</th>
                         <th>Комиссия %</th>
@@ -426,6 +455,9 @@
                         <td th:text="${order.rating}">AAA</td>
                         <td class="currency" th:text="${#numbers.formatDecimal(order.couponValue, 0, 2)}">25.00</td>
                         <td th:text="${order.couponPeriod} + ' дн.'">91 дн.</td>
+                        <td class="editable-cell" th:onclick="'editOrderField(' + ${order.id} + ', \'useOfferDate\')'">
+                            <span th:text="${order.useOfferDate ? 'К оферте' : 'К погашению'}">К погашению</span>
+                        </td>
                         <td class="currency editable-cell costs-group" th:onclick="'editOrderField(' + ${order.id} + ', \'priceAsk\')'"
                             th:text="${#numbers.formatDecimal(order.priceAsk, 0, 2)}">1000.00</td>
                         <td class="currency" th:text="${#numbers.formatDecimal(order.nkd, 0, 2)}">15.50</td>
@@ -594,7 +626,8 @@
                 purchaseDate: document.getElementById('newPurchaseDate').value,
                 isin: document.getElementById('newIsin').value,
                 priceAsk: parseFloat(document.getElementById('newPrice').value),
-                feePercent: parseFloat(document.getElementById('newFeePercent').value)
+                feePercent: parseFloat(document.getElementById('newFeePercent').value),
+                useOfferDate: document.getElementById('newUseOfferDate').value === 'true'
             };
 
             try {
@@ -626,6 +659,7 @@
             document.getElementById('newIsin').value = '';
             document.getElementById('newPrice').value = '';
             document.getElementById('newFeePercent').value = '0.3';
+            document.getElementById('newUseOfferDate').value = 'false';
             
             // Очищаем отображаемые данные
             ['newBondName', 'newRating', 'newCouponValue', 'newCouponPeriod', 'newFaceValue', 'newNkd',
@@ -700,14 +734,20 @@
                         currentValue = '';
                     }
                     break;
-                case 'priceAsk':
+                case 'useOfferDate':
                     cellIndex = 6;
+                    // Получаем текущее состояние из текста
+                    const cellText = row.cells[cellIndex].textContent.trim();
+                    currentValue = cellText === 'К оферте' ? 'true' : 'false';
+                    break;
+                case 'priceAsk':
+                    cellIndex = 7;
                     // Извлекаем только цифры и точку/запятую
                     const priceText = row.cells[cellIndex].textContent.replace(/[^\d.,]/g, '').replace(',', '.');
                     currentValue = priceText || '';
                     break;
                 case 'feePercent':
-                    cellIndex = 8;
+                    cellIndex = 9;
                     // Извлекаем только цифры и точку/запятую
                     const feeText = row.cells[cellIndex].textContent.replace(/[^\d.,]/g, '').replace(',', '.');
                     currentValue = feeText || '';
@@ -722,24 +762,92 @@
             const originalContent = cell.innerHTML;
 
             // Создаем input для редактирования
-            let inputType = fieldName === 'purchaseDate' ? 'date' : 'number';
-            let inputStep = fieldName === 'purchaseDate' ? '' : 'step="0.01"';
+            let inputType, inputStep, inputChecked;
             
-            cell.innerHTML = `
-                <input type="${inputType}" value="${currentValue}" ${inputStep} class="edit-input" 
-                       onblur="saveOrderField(${orderId}, '${fieldName}', this.value, '${originalContent.replace(/'/g, "\\'")}')"
-                       onkeydown="handleOrderFieldKeydown(event, ${orderId}, '${fieldName}', '${originalContent.replace(/'/g, "\\'")}')" />
-            `;
+            if (fieldName === 'purchaseDate') {
+                inputType = 'date';
+                inputStep = '';
+            } else if (fieldName === 'useOfferDate') {
+                inputType = 'select';
+                inputStep = '';
+            } else {
+                inputType = 'number';
+                inputStep = 'step="0.01"';
+            }
             
-            cell.querySelector('input').focus();
-            cell.querySelector('input').select();
+            if (fieldName === 'useOfferDate') {
+                cell.innerHTML = `
+                    <select class="edit-input" 
+                            onchange="saveOrderFieldSelect(${orderId}, '${fieldName}', this.value, this.parentElement)"
+                            onclick="saveOrderFieldSelect(${orderId}, '${fieldName}', this.value, this.parentElement)"
+                            onkeydown="handleOrderFieldKeydoFromSelect(event, ${orderId}, '${fieldName}')" >
+                        <option value="false" ${currentValue === 'false' ? 'selected' : ''}>К погашению</option>
+                        <option value="true" ${currentValue === 'true' ? 'selected' : ''}>К оферте</option>
+                    </select>
+                `;
+            } else {
+                cell.innerHTML = `
+                    <input type="${inputType}" value="${currentValue}" ${inputStep} class="edit-input" 
+                           onblur="saveOrderField(${orderId}, '${fieldName}', this.value, '${originalContent.replace(/'/g, "\\'")}')"
+                           onkeydown="handleOrderFieldKeydown(event, ${orderId}, '${fieldName}', '${originalContent.replace(/'/g, "\\'")}')" />
+                `;
+            }
+            
+            const inputElement = cell.querySelector('input, select');
+            inputElement.focus();
+            if (inputElement.tagName === 'INPUT') {
+                inputElement.select();
+            } else if (inputElement.tagName === 'SELECT') {
+                // Автоматически раскрываем селектбокс через разные методы
+                setTimeout(() => {
+                    try {
+                        // Метод 1: showPicker если доступен (современные браузеры)
+                        if (inputElement.showPicker) {
+                            inputElement.showPicker();
+                        } else {
+                            // Метод 2: имитируем клик
+                            inputElement.click();
+                        }
+                    } catch (e) {
+                        console.log('Не удалось автоматически открыть селектбокс:', e);
+                    }
+                }, 50);
+            }
+        }
+
+        // Специальная функция для сохранения селектбокса
+        function saveOrderFieldSelect(orderId, fieldName, newValue, cellElement) {
+            // Сразу закрываем селектбокс, восстанавливая отображение
+            const row = document.getElementById(`order-row-${orderId}`);
+            const cellIndex = 6; // индекс колонки useOfferDate
+            const cell = row.cells[cellIndex];
+            const displayText = newValue === 'true' ? 'К оферте' : 'К погашению';
+            
+            // Немедленно восстанавливаем отображение ячейки
+            setTimeout(() => {
+                cell.innerHTML = `<span>${displayText}</span>`;
+                cell.classList.remove('editing');
+                row.classList.remove('editing');
+                
+                // Асинхронно отправляем на сервер
+                saveOrderField(orderId, fieldName, newValue, displayText);
+            }, 0);
+        }
+
+        // Обработка клавиш для селектбокса
+        function handleOrderFieldKeydoFromSelect(event, orderId, fieldName) {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                const originalContent = event.target.value === 'true' ? 'К погашению' : 'К оферте';
+                cancelOrderFieldEdit(orderId, fieldName, originalContent);
+            }
         }
 
         // Сохранение отредактированного поля
         async function saveOrderField(orderId, fieldName, newValue, originalContent) {
             console.log(`saveOrderField вызван: orderId=${orderId}, fieldName=${fieldName}, newValue="${newValue}"`);
             
-            if (!newValue || newValue.trim() === '') {
+            if (fieldName !== 'useOfferDate' && (!newValue || newValue.trim() === '')) {
                 console.log('Пустое значение, отменяем редактирование');
                 cancelOrderFieldEdit(orderId, fieldName, originalContent);
                 return;
@@ -751,6 +859,9 @@
             if (fieldName === 'purchaseDate') {
                 console.log('Обработка даты:', newValue);
                 updateData.purchaseDate = newValue;
+            } else if (fieldName === 'useOfferDate') {
+                console.log('Обработка флага оферты:', newValue);
+                updateData.useOfferDate = newValue === 'true';
             } else if (fieldName === 'priceAsk') {
                 console.log('Обработка цены:', newValue);
                 const priceValue = parseFloat(newValue);
@@ -807,11 +918,14 @@
                 case 'purchaseDate':
                     cellIndex = 0;
                     break;
-                case 'priceAsk':
+                case 'useOfferDate':
                     cellIndex = 6;
                     break;
+                case 'priceAsk':
+                    cellIndex = 7;
+                    break;
                 case 'feePercent':
-                    cellIndex = 8;
+                    cellIndex = 9;
                     break;
                 default:
                     return;

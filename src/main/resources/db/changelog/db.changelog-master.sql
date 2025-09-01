@@ -482,3 +482,8 @@ INNER JOIN bonds_calc bc ON bc.isin = mb.isin;
 --changeset bonds:29
 -- Создание уникального индекса tbank_prices (figi)
 CREATE UNIQUE INDEX idx_tbank_figi ON tbank_prices (figi);
+
+
+--changeset bonds:30
+-- Добавляем поле use_offer_date для выбора к какой дате считать показатели
+ALTER TABLE user_orders ADD COLUMN use_offer_date BOOLEAN DEFAULT FALSE;

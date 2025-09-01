@@ -41,6 +41,7 @@ public class UserOrderRepository {
             order.setCouponValue(rs.getBigDecimal("coupon_value"));
             order.setCouponPeriod(rs.getInt("coupon_period"));
             order.setMaturityDate(rs.getDate("maturity_date") != null ? rs.getDate("maturity_date").toLocalDate() : null);
+            order.setUseOfferDate(rs.getObject("use_offer_date", Boolean.class));
             order.setPriceAsk(rs.getBigDecimal("price_ask"));
             order.setNkd(rs.getBigDecimal("nkd"));
             order.setFeePercent(rs.getBigDecimal("fee_percent"));
@@ -76,10 +77,10 @@ public class UserOrderRepository {
     private UserOrder create(UserOrder order) {
         String sql = "INSERT INTO user_orders " +
                      "(telegram_user_id, purchase_date, isin, ticker, bond_name, rating, " +
-                     "coupon_value, coupon_period, maturity_date, price_ask, nkd, fee_percent, " +
+                     "coupon_value, coupon_period, maturity_date, use_offer_date, price_ask, nkd, fee_percent, " +
                      "total_costs, face_value, total_coupon, total_income, net_profit, annual_yield, " +
                      "created_at, updated_at) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
         LocalDateTime now = LocalDateTime.now();
@@ -97,17 +98,18 @@ public class UserOrderRepository {
             ps.setBigDecimal(7, order.getCouponValue());
             ps.setObject(8, order.getCouponPeriod());
             ps.setDate(9, order.getMaturityDate() != null ? java.sql.Date.valueOf(order.getMaturityDate()) : null);
-            ps.setBigDecimal(10, order.getPriceAsk());
-            ps.setBigDecimal(11, order.getNkd());
-            ps.setBigDecimal(12, order.getFeePercent());
-            ps.setBigDecimal(13, order.getTotalCosts());
-            ps.setBigDecimal(14, order.getFaceValue());
-            ps.setBigDecimal(15, order.getTotalCoupon());
-            ps.setBigDecimal(16, order.getTotalIncome());
-            ps.setBigDecimal(17, order.getNetProfit());
-            ps.setBigDecimal(18, order.getAnnualYield());
-            ps.setTimestamp(19, java.sql.Timestamp.valueOf(order.getCreatedAt()));
-            ps.setTimestamp(20, java.sql.Timestamp.valueOf(order.getUpdatedAt()));
+            ps.setObject(10, order.getUseOfferDate());
+            ps.setBigDecimal(11, order.getPriceAsk());
+            ps.setBigDecimal(12, order.getNkd());
+            ps.setBigDecimal(13, order.getFeePercent());
+            ps.setBigDecimal(14, order.getTotalCosts());
+            ps.setBigDecimal(15, order.getFaceValue());
+            ps.setBigDecimal(16, order.getTotalCoupon());
+            ps.setBigDecimal(17, order.getTotalIncome());
+            ps.setBigDecimal(18, order.getNetProfit());
+            ps.setBigDecimal(19, order.getAnnualYield());
+            ps.setTimestamp(20, java.sql.Timestamp.valueOf(order.getCreatedAt()));
+            ps.setTimestamp(21, java.sql.Timestamp.valueOf(order.getUpdatedAt()));
             return ps;
         }, keyHolder);
 
@@ -127,7 +129,7 @@ public class UserOrderRepository {
     private UserOrder update(UserOrder order) {
         String sql = "UPDATE user_orders SET " +
                      "purchase_date = ?, isin = ?, ticker = ?, bond_name = ?, rating = ?, " +
-                     "coupon_value = ?, coupon_period = ?, maturity_date = ?, price_ask = ?, nkd = ?, " +
+                     "coupon_value = ?, coupon_period = ?, maturity_date = ?, use_offer_date = ?, price_ask = ?, nkd = ?, " +
                      "fee_percent = ?, total_costs = ?, face_value = ?, total_coupon = ?, " +
                      "total_income = ?, net_profit = ?, annual_yield = ?, updated_at = ? " +
                      "WHERE id = ?";
@@ -143,6 +145,7 @@ public class UserOrderRepository {
             order.getCouponValue(),
             order.getCouponPeriod(),
             order.getMaturityDate() != null ? java.sql.Date.valueOf(order.getMaturityDate()) : null,
+            order.getUseOfferDate(),
             order.getPriceAsk(),
             order.getNkd(),
             order.getFeePercent(),

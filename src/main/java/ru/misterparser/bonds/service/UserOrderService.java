@@ -92,6 +92,9 @@ public class UserOrderService {
         if (updateData.getMaturityDate() != null) {
             existingOrder.setMaturityDate(updateData.getMaturityDate());
         }
+        if (updateData.getUseOfferDate() != null) {
+            existingOrder.setUseOfferDate(updateData.getUseOfferDate());
+        }
 
         // Пересчитываем НКД если изменилась дата
         Optional<Bond> bondOpt = bondRepository.findByIsin(existingOrder.getIsin());
@@ -157,12 +160,14 @@ public class UserOrderService {
         order.setCouponPeriod(bond.getCouponLength());
         order.setFaceValue(bond.getFaceValue());
         
-        // Устанавливаем дату погашения или оферты
+        // Устанавливаем дату погашения и флаг использования оферты
         if (order.getMaturityDate() == null) {
             if (bond.getOfferDate() != null && bond.getOfferDate().isAfter(LocalDate.now())) {
                 order.setMaturityDate(bond.getOfferDate());
+                order.setUseOfferDate(true);
             } else {
                 order.setMaturityDate(bond.getMaturityDate());
+                order.setUseOfferDate(false);
             }
         }
         
@@ -201,17 +206,19 @@ public class UserOrderService {
             return;
         }
 
-        // Рассчитываем комиссию
+        // Рассчитываем комиссию (для оферты удваиваем)
         BigDecimal feeAmount = BigDecimal.ZERO;
         if (order.getFeePercent() != null) {
-            feeAmount = order.getPriceAsk().multiply(order.getFeePercent()).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+            BigDecimal feeMultiplier = (order.getUseOfferDate() != null && order.getUseOfferDate()) 
+                ? BigDecimal.valueOf(2) : BigDecimal.ONE;
+            feeAmount = order.getPriceAsk().multiply(order.getFeePercent()).multiply(feeMultiplier).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
         }
 
         // Общие затраты = Цена + НКД + Комиссия
         BigDecimal nkd = order.getNkd() != null ? order.getNkd() : BigDecimal.ZERO;
         order.setTotalCosts(order.getPriceAsk().add(nkd).add(feeAmount));
 
-        // Рассчитываем общий купонный доход до погашения
+        // Рассчитываем общий купонный доход до погашения/оферты
         calculateTotalCoupon(order);
 
         // Общий доход = Номинал + Купоны
@@ -226,7 +233,7 @@ public class UserOrderService {
     }
 
     /**
-     * Рассчитывает общий купонный доход до погашения
+     * Рассчитывает общий купонный доход до погашения/оферты
      */
     private void calculateTotalCoupon(UserOrder order) {
         if (order.getCouponValue() == null || order.getCouponPeriod() == null || 
@@ -272,5 +279,19 @@ public class UserOrderService {
         BigDecimal annualYield = profitability.multiply(annualizationFactor).multiply(BigDecimal.valueOf(100));
         
         order.setAnnualYield(annualYield.setScale(2, RoundingMode.HALF_UP));
+    }
+
+    /**
+     * Получает эффективную дату для расчетов (погашение или оферта)
+     */
+    private LocalDate getEffectiveMaturityDate(UserOrder order, Bond bond) {
+        if (order.getUseOfferDate() != null && order.getUseOfferDate()) {
+            // Используем дату оферты если флаг установлен и оферта существует
+            if (bond.getOfferDate() != null) {
+                return bond.getOfferDate();
+            }
+        }
+        // Используем дату погашения по умолчанию или если оферты нет
+        return order.getMaturityDate() != null ? order.getMaturityDate() : bond.getMaturityDate();
     }
 }

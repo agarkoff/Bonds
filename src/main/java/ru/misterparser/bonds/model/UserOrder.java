@@ -25,6 +25,7 @@ public class UserOrder {
     private BigDecimal couponValue;
     private Integer couponPeriod;
     private LocalDate maturityDate;
+    private Boolean useOfferDate;     // Флажок: использовать дату оферты для расчетов
     private BigDecimal priceAsk;
     private BigDecimal nkd;
     private BigDecimal feePercent;
