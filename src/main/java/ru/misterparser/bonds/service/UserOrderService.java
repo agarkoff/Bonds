@@ -206,12 +206,14 @@ public class UserOrderService {
             return;
         }
 
-        // Рассчитываем комиссию (для оферты удваиваем)
+        // Рассчитываем комиссию от суммы цены и НКД (для оферты удваиваем)
         BigDecimal feeAmount = BigDecimal.ZERO;
         if (order.getFeePercent() != null) {
+            BigDecimal nkd = order.getNkd() != null ? order.getNkd() : BigDecimal.ZERO;
+            BigDecimal feeBase = order.getPriceAsk().add(nkd); // Комиссия от цены + НКД
             BigDecimal feeMultiplier = (order.getUseOfferDate() != null && order.getUseOfferDate()) 
                 ? BigDecimal.valueOf(2) : BigDecimal.ONE;
-            feeAmount = order.getPriceAsk().multiply(order.getFeePercent()).multiply(feeMultiplier).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+            feeAmount = feeBase.multiply(order.getFeePercent()).multiply(feeMultiplier).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
         }
 
         // Общие затраты = Цена + НКД + Комиссия
