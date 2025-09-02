@@ -179,23 +179,29 @@ public class UserOrderService {
 
     /**
      * Рассчитывает НКД на дату покупки
+     * Использует данные о количестве дней с последней выплаты купона из moex_bonds
      */
     private void calculateNkd(UserOrder order, Bond bond) {
-        if (order.getPurchaseDate() != null && !order.getPurchaseDate().equals(LocalDate.now())) {
-            // Если дата покупки не текущая, пересчитываем НКД
-            // Упрощенный расчет - используем пропорцию от текущего НКД
-            if (bond.getNkd() != null && bond.getCouponDaily() != null) {
-                // Примерный расчет НКД на дату покупки
-                long daysSincePurchase = ChronoUnit.DAYS.between(order.getPurchaseDate(), LocalDate.now());
-                BigDecimal nkdAdjustment = bond.getCouponDaily().multiply(BigDecimal.valueOf(daysSincePurchase));
-                BigDecimal calculatedNkd = bond.getNkd().subtract(nkdAdjustment);
-                order.setNkd(calculatedNkd.max(BigDecimal.ZERO));
-            } else {
-                order.setNkd(bond.getNkd());
-            }
-        } else {
-            order.setNkd(bond.getNkd());
+        // Рассчитываем НКД на дату покупки
+        LocalDate moexUpdateDate = bond.getMoexUpdatedAt().toLocalDate();
+        
+        // Количество дней от даты покупки до даты обновления данных MOEX
+        long daysBetween = ChronoUnit.DAYS.between(order.getPurchaseDate(), moexUpdateDate);
+        
+        // НКД на дату покупки = (дни_с_купона_на_дату_moex - разница_дней) * купон_в_день
+        long couponDaysOnPurchaseDate = bond.getCouponDaysPassed() - daysBetween;
+        
+        // Если получилось отрицательное значение, значит дата покупки была в предыдущем купонном периоде
+        if (couponDaysOnPurchaseDate < 0) {
+            couponDaysOnPurchaseDate = bond.getCouponLength() + couponDaysOnPurchaseDate;
         }
+        
+        // НКД = (дни с купона / период купона) * размер купона
+        BigDecimal nkdRatio = BigDecimal.valueOf(couponDaysOnPurchaseDate)
+            .divide(BigDecimal.valueOf(bond.getCouponLength()), 6, RoundingMode.HALF_UP);
+        BigDecimal calculatedNkd = bond.getCouponValue().multiply(nkdRatio);
+        
+        order.setNkd(calculatedNkd.max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP));
     }
 
     /**
